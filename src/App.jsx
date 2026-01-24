@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
 import "katex/dist/katex.min.css";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
@@ -239,9 +240,16 @@ const MarkdownView = ({ content, code }) => {
 
   return (
     <div className="devnote-markdown">
+      <style>{`
+        .devnote-markdown table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+        .devnote-markdown th, .devnote-markdown td { border: 1px solid #dfe1e6; padding: 8px 12px; text-align: left; }
+        .devnote-markdown th { background-color: #f4f5f7; font-weight: bold; }
+        .devnote-markdown tr:nth-child(even) { background-color: #f9f9fb; }
+        .devnote-markdown blockquote[data-label] { margin: 1em 0; border-left: 4px solid #4c9aff; padding-left: 1em; color: #172b4d; }
+      `}</style>
       <ReactMarkdown 
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={{
           code({ node, inline, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || "");
@@ -528,42 +536,68 @@ export default function App() {
     service.remove("indentedCodeBlock");
     service.use(gfm);
 
-    // Confluence-specific rules
     // 1. Remove line numbers from Confluence code blocks
     service.addRule("confluence-line-numbers", {
       filter: (node) => 
-        node.nodeName === "TD" && (node.classList.contains("line") || node.classList.contains("rd-line-number")),
+        (node.nodeName === "TD" && (node.classList.contains("line") || node.classList.contains("rd-line-number"))) ||
+        (node.nodeName === "DIV" && node.classList.contains("line-numbers")),
       replacement: () => "",
     });
 
-      // 2. Specialized Code Block handling (Confluence Macro)
-      service.addRule("confluence-code-macro", {
-        filter: (node) => 
-          (node.nodeName === "DIV" && (node.classList.contains("code-content") || node.classList.contains("code-block") || node.classList.contains("code") || node.getAttribute("data-macro-name") === "code")) ||
-          (node.nodeName === "PRE" && (node.classList.contains("syntaxhighlighter-pre") || node.classList.contains("syntaxhighlighter") || node.classList.contains("code"))),
-        replacement: (content, node) => {
-          const code = node.innerText || node.textContent || "";
-          const cleanCode = code.replace(/\r/g, "").trim();
-          if (!cleanCode) return "";
-          return `\n\n\`\`\`\n${cleanCode}\n\`\`\`\n\n`;
+    // 2. Specialized Code Block handling (Confluence Macro)
+    service.addRule("confluence-code-macro", {
+      filter: (node) => 
+        (node.nodeName === "DIV" && (node.classList.contains("code-content") || node.classList.contains("code-block") || node.classList.contains("code") || node.getAttribute("data-macro-name") === "code")) ||
+        (node.nodeName === "PRE" && (node.classList.contains("syntaxhighlighter-pre") || node.classList.contains("syntaxhighlighter") || node.classList.contains("code"))),
+      replacement: (content, node) => {
+        const rawCode = node.innerText || node.textContent || "";
+        const cleanCode = rawCode.replace(/\r/g, "").trim();
+        if (!cleanCode) return "";
+        
+        // Smart Check: If it's effectively a single line, treat as inline
+        const hasNewLine = cleanCode.includes("\n") || rawCode.includes("<br") || node.querySelector('br');
+        if (!hasNewLine && cleanCode.length < 100) {
+          return ` \`${cleanCode}\` `;
         }
-      });
+        
+        return `\n\n\`\`\`\n${cleanCode}\n\`\`\`\n\n`;
+      }
+    });
 
-    // 3. Improve inline code merging
+    // 3. Improve inline code merging (Greedy search for mono fonts and backgrounds)
     service.addRule("confluence-inline-code", {
       filter: (node) => 
         ["code", "tt", "kbd", "samp"].includes(node.nodeName.toLowerCase()) ||
         (node.nodeName === "SPAN" && (
           node.classList.contains("code") || 
+          node.classList.contains("monospace") ||
           node.style.fontFamily?.toLowerCase().includes("mono") ||
-          node.style.backgroundColor === "rgb(244, 245, 247)" // Confluence inline code bg
+          node.style.backgroundColor === "rgb(244, 245, 247)" ||
+          node.style.backgroundColor === "rgb(241, 242, 244)" ||
+          node.style.backgroundColor === "var(--ds-background-neutral-subtle, #F4F5F7)"
         )),
       replacement: (content) => {
-        if (!content.trim()) return "";
-        return `\`${content.trim().replace(/`/g, "\\`")}\``;
+        const cleanContent = content.trim();
+        if (!cleanContent) return "";
+        return ` \`${cleanContent.replace(/`/g, "\\`")}\` `;
       }
     });
 
+    // 5. Cleanup inside preserved table cells (Strip restrictive styles and flatten)
+    service.addRule("clean-confluence-tables", {
+      filter: ["table", "thead", "tbody", "tr", "th", "td", "colgroup", "col"],
+      replacement: (content, node) => {
+        const tag = node.nodeName.toLowerCase();
+        // Strip problematic style attributes (like height: 1px, width: 1px)
+        const cleanContent = (tag === 'td' || tag === 'th') ? content.replace(/\n+/g, " ").trim() : content;
+        
+        // Return raw tag with essential attributes only
+        if (tag === 'table') return `\n\n<table class="confluenceTable">${cleanContent}</table>\n\n`;
+        return `<${tag}>${cleanContent}</${tag}>`;
+      }
+    });
+
+    // 6. Confluence Task List
     service.addRule("confluence-tasks", {
       filter: (node) =>
         node.nodeName === "LI" && node.classList.contains("task-list-item"),
@@ -581,18 +615,6 @@ export default function App() {
         const cleanContent = node.textContent.trim();
         return `\n\n${prefix} ${cleanContent}\n\n`;
       },
-    });
-
-    // 4. Flatten Table Cells (Critical for GFM Tables)
-    service.addRule("confluence-table-cells", {
-      filter: ["th", "td"],
-      replacement: (content, node) => {
-        // Flatten content: remove newlines and extra spaces inside cells
-        // Also handle <br> specifically
-        let flatContent = content.replace(/[\n\r]+/g, " ").trim();
-        const name = node.nodeName.toLowerCase();
-        return `<${name}>${flatContent}</${name}>`;
-      }
     });
 
     // 5. Clean up extra wrappers often found in Confluence
