@@ -557,7 +557,7 @@ export default function App() {
             if (child.nodeType === 3) { // Text node
               text += child.textContent;
             } else if (child.nodeType === 1) { // Element node
-              const tag = child.nodeName;
+              const tag = child.nodeName.toUpperCase();
               // Broaden block detection to include TD, TH, PRE and more
               const isBlock = ["DIV", "P", "TR", "BR", "LI", "TD", "TH", "PRE", "H1", "H2", "H3"].includes(tag) || 
                               child.classList.contains("line") || 
@@ -569,6 +569,8 @@ export default function App() {
               if (isBlock) {
                 const needsPrefix = text && !text.endsWith("\n");
                 const needsSuffix = childContent && !childContent.endsWith("\n");
+                // For TD/TH, we only want a newline if it's not the first cell in a TR, 
+                // but to be safe, just ensure each block gets its own lines.
                 text += (needsPrefix ? "\n" : "") + childContent + (tag === "BR" || needsSuffix ? "\n" : "");
               } else {
                 text += childContent;
@@ -723,12 +725,14 @@ export default function App() {
     let markdown = "";
     
     if (html) {
-      // 컨플루언스 코드 매크로 단독 복사 감지 (plainText에 줄바꿈이 있다면 그것이 가장 정확함)
-      const isPureCodeMacro = (html.includes('data-macro-name="code"') || html.includes('code-content')) && 
-                              !html.includes('<table') && 
-                              plainText.includes('\n');
+      // 컨플루언스 코드 매크로 감지 (더 넓은 범위: table 구조 포함)
+      const hasCodeMacro = html.includes('data-macro-name="code"') || 
+                           html.includes('code-content') || 
+                           html.includes('syntaxhighlighter') ||
+                           html.includes('code-block');
       
-      if (isPureCodeMacro) {
+      // plainText에 줄바꿈이 있고 코드 매크로가 감지되면, plainText를 절대적으로 신뢰 (메모장 효과)
+      if (hasCodeMacro && plainText.includes('\n')) {
         markdown = `\n\n\`\`\`\n${plainText.trim()}\n\`\`\`\n\n`;
       } else {
         // 폰트 정보 등이 포함된 복잡한 HTML인 경우 turndown 사용
