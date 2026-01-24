@@ -341,6 +341,7 @@ export default function App() {
 
   const [formTags, setFormTags] = useState("");
   const [selectedTag, setSelectedTag] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const htmlInputRef = useRef(null);
 
@@ -399,8 +400,18 @@ export default function App() {
       result = result.filter((s) => s.tags && s.tags.includes(selectedTag));
     }
 
+    // 3. 검색어 필터링
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(s => 
+        s.title.toLowerCase().includes(q) || 
+        s.content.toLowerCase().includes(q) ||
+        (s.tags && s.tags.some(t => t.toLowerCase().includes(q)))
+      );
+    }
+
     return result;
-  }, [snippets, selectedCategoryId, categories, selectedTag]);
+  }, [snippets, selectedCategoryId, categories, selectedTag, searchQuery]);
 
   const allTags = useMemo(() => {
     const tags = new Set();
@@ -732,8 +743,18 @@ export default function App() {
             />
             <input
               className="w-full bg-slate-100 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="검색..."
+              placeholder="제목, 내용, 태그 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         </header>
 
