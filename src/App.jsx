@@ -789,10 +789,16 @@ export default function App() {
       return;
     }
     try {
+      showNotification("로그인을 진행 중입니다...");
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error("Login failed:", error);
-      showNotification("로그인에 실패했습니다.");
+      let msg = "로그인에 실패했습니다.";
+      if (error.code === 'auth/popup-closed-by-user') msg = "로그인 창이 닫혔습니다.";
+      else if (error.code === 'auth/unauthorized-domain') msg = "승인되지 않은 도메인입니다. Firebase 콘솔 설정을 확인하세요.";
+      else msg += ` (${error.code})`;
+      
+      showNotification(msg);
     }
   };
 
