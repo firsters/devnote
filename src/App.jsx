@@ -244,6 +244,37 @@ const TagChip = ({ tag, onClick, active }) => (
   </button>
 );
 
+const ConfirmDialog = ({ open, title, message, onConfirm, onCancel, type = "danger" }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden animate-zoom-in">
+        <div className="p-6 text-center">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${type === 'danger' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+            {type === 'danger' ? <Trash2 size={24} /> : <Info size={24} />}
+          </div>
+          <h3 className="font-bold text-lg text-slate-800 mb-2">{title}</h3>
+          <p className="text-slate-600 text-sm leading-relaxed">{message}</p>
+        </div>
+        <div className="flex border-t border-slate-100">
+          <button 
+            onClick={onCancel}
+            className="flex-1 px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50 border-r border-slate-100 transition-colors"
+          >
+            취소
+          </button>
+          <button 
+            onClick={onConfirm}
+            className={`flex-1 px-4 py-3 text-sm font-bold transition-colors ${type === 'danger' ? 'text-red-600 hover:bg-red-50' : 'text-blue-600 hover:bg-blue-50'}`}
+          >
+            확인
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CategoryNode = ({
   category,
   depth,
@@ -356,6 +387,7 @@ export default function App() {
     return localStorage.getItem(STORAGE_KEY_VIEW_MODE) || "compact";
   });
   const [expandedSnippetIds, setExpandedSnippetIds] = useState(new Set());
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: "", message: "", onConfirm: null, type: "danger" });
 
   const htmlInputRef = useRef(null);
   const turndownRef = useRef(new TurndownService({
@@ -524,11 +556,21 @@ export default function App() {
     });
   };
 
+  const closeConfirm = () => setConfirmDialog({ ...confirmDialog, open: false });
+
   const handleDeleteSnippet = (id) => {
-    if (window.confirm("정말 삭제하시겠습니까?")) {
-      setSnippets((prev) => prev.filter((s) => s.id !== id));
-      showNotification("노트가 삭제되었습니다.");
-    }
+    setConfirmDialog({
+      open: true,
+      title: "노트 삭제",
+      message: "이 노트를 정말 삭제하시겠습니까? 삭제된 내용은 복구할 수 없습니다.",
+      type: "danger",
+      onConfirm: () => {
+        setSnippets((prev) => prev.filter((s) => s.id !== id));
+        showNotification("노트가 삭제되었습니다.");
+        closeConfirm();
+      },
+      onCancel: closeConfirm
+    });
   };
 
   const handleAddCategory = () => {
@@ -544,14 +586,22 @@ export default function App() {
   };
 
   const handleDeleteCategory = (id) => {
-    if (window.confirm("삭제하시겠습니까? 하위 폴더는 최상위로 이동됩니다.")) {
-      setCategories((prev) =>
-        prev
-          .filter((c) => c.id !== id)
-          .map((c) => (c.parentId === id ? { ...c, parentId: null } : c)),
-      );
-      showNotification("삭제되었습니다.");
-    }
+    setConfirmDialog({
+      open: true,
+      title: "폴더 삭제",
+      message: "폴더를 삭제하시겠습니까? 하위 폴더와 노트는 최상위로 이동됩니다.",
+      type: "danger",
+      onConfirm: () => {
+        setCategories((prev) =>
+          prev
+            .filter((c) => c.id !== id)
+            .map((c) => (c.parentId === id ? { ...c, parentId: null } : c)),
+        );
+        showNotification("폴더가 삭제되었습니다.");
+        closeConfirm();
+      },
+      onCancel: closeConfirm
+    });
   };
 
   const openWriteModal = (snippet = null) => {
@@ -641,10 +691,13 @@ export default function App() {
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900 safe-area-inset-top">
       {notification && (
-        <div className="fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium bg-slate-800 animate-fade-in-down">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[110] px-5 py-3 rounded-full shadow-2xl text-white text-sm font-bold bg-slate-800/90 backdrop-blur border border-slate-700 flex items-center gap-3 animate-fade-in-down">
+          <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
           {notification}
         </div>
       )}
+
+      <ConfirmDialog {...confirmDialog} onCancel={confirmDialog.onCancel || closeConfirm} />
 
       {isMobileMenuOpen && (
         <div
