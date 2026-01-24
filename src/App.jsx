@@ -385,7 +385,18 @@ export default function App() {
 
   const filteredSnippets = useMemo(() => {
     let result = snippets;
+    const q = searchQuery.trim().toLowerCase();
 
+    // 검색어가 있으면 전역 검색 (카테고리/태그 무시)
+    if (q) {
+      return result.filter(s => 
+        (s.title || "").toLowerCase().includes(q) || 
+        (s.content || "").toLowerCase().includes(q) ||
+        (s.tags && s.tags.some(t => t.toLowerCase().includes(q)))
+      );
+    }
+
+    // 검색어가 없으면 일반 필터링
     // 1. 카테고리 필터링
     if (selectedCategoryId !== "all") {
       const targetIds = getDescendantIds(selectedCategoryId);
@@ -398,16 +409,6 @@ export default function App() {
     // 2. 태그 필터링
     if (selectedTag) {
       result = result.filter((s) => s.tags && s.tags.includes(selectedTag));
-    }
-
-    // 3. 검색어 필터링
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(s => 
-        s.title.toLowerCase().includes(q) || 
-        s.content.toLowerCase().includes(q) ||
-        (s.tags && s.tags.some(t => t.toLowerCase().includes(q)))
-      );
     }
 
     return result;
@@ -626,12 +627,13 @@ export default function App() {
           </div>
 
           <ul>
-            <li
+             <li
               onClick={() => {
                 setSelectedCategoryId("all");
                 setSelectedTag(null);
+                setSearchQuery("");
               }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer mb-1 ${selectedCategoryId === "all" && !selectedTag ? "bg-blue-100 text-blue-700 font-bold" : "text-slate-600 hover:bg-slate-100"}`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer mb-1 ${selectedCategoryId === "all" && !selectedTag && !searchQuery ? "bg-blue-100 text-blue-700 font-bold" : "text-slate-600 hover:bg-slate-100"}`}
             >
               <Folder size={16} /> <span>전체 보기</span>
             </li>
@@ -738,7 +740,7 @@ export default function App() {
           </div>
           <div className="relative w-full max-w-md ml-4">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
               size={18}
             />
             <input
