@@ -539,8 +539,8 @@ export default function App() {
     // 1. Remove line numbers from Confluence code blocks
     service.addRule("confluence-line-numbers", {
       filter: (node) => 
-        (node.nodeName === "TD" && (node.classList.contains("line") || node.classList.contains("rd-line-number"))) ||
-        (node.nodeName === "DIV" && node.classList.contains("line-numbers")),
+        (node.nodeName === "TD" && (node.classList.contains("line-number") || node.classList.contains("rd-line-number"))) ||
+        (node.nodeName === "DIV" && (node.classList.contains("line-numbers") || node.classList.contains("gutter"))),
       replacement: () => "",
     });
 
@@ -549,17 +549,29 @@ export default function App() {
         (node.nodeName === "DIV" && (node.getAttribute("data-macro-name") === "code" || node.classList.contains("code-content") || node.classList.contains("code-block"))) ||
         (node.nodeName === "PRE" && (node.classList.contains("syntaxhighlighter-pre") || node.classList.contains("syntaxhighlighter") || node.classList.contains("code"))),
       replacement: (content, node) => {
-        const rawCode = node.innerText || node.textContent || "";
-        const cleanCode = rawCode.replace(/\r/g, "").trim();
-        if (!cleanCode) return "";
+        // Try to find individual lines if they exist (common in Confluence syntax highlighter)
+        const lineNodes = node.querySelectorAll('.line, .code-line, .syntaxhighlighter-line');
+        let cleanCode = "";
+        
+        if (lineNodes.length > 0) {
+          cleanCode = Array.from(lineNodes)
+            .map(ln => ln.innerText || ln.textContent)
+            .join('\n');
+        } else {
+          // Fallback to innerText/textContent
+          cleanCode = (node.innerText || node.textContent || "").replace(/\r/g, "");
+        }
+
+        const trimmedCode = cleanCode.trim();
+        if (!trimmedCode) return "";
         
         // Smart Check: If it's effectively a single line, treat as inline
-        const hasNewLine = cleanCode.includes("\n") || rawCode.includes("<br") || node.querySelector('br');
-        if (!hasNewLine && cleanCode.length < 100) {
-          return ` \`${cleanCode}\` `;
+        const hasNewLine = trimmedCode.includes("\n") || cleanCode.includes("\n") || node.querySelector('br');
+        if (!hasNewLine && trimmedCode.length < 100) {
+          return ` \`${trimmedCode}\` `;
         }
         
-        return `\n\n\`\`\`\n${cleanCode}\n\`\`\`\n\n`;
+        return `\n\n\`\`\`\n${trimmedCode}\n\`\`\`\n\n`;
       }
     });
 
