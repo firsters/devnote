@@ -61,7 +61,7 @@ import {
 // -----------------------------------------------------------------------------
 // 앱 버전 및 설정
 // -----------------------------------------------------------------------------
-const APP_VERSION = "v1.0.20260124214834 GMT+9";
+const APP_VERSION = "v1.1.20260125002000 GMT+9";
 const STORAGE_KEY_DATA = "devnote_data_v11";
 const STORAGE_KEY_CATS = "devnote_cats_v11";
 const STORAGE_KEY_VIEW_MODE = "devnote_view_mode_v11";
@@ -557,8 +557,9 @@ export default function App() {
             
             // Skip line numbers inside code macro (Confluence specific)
             if (child.nodeType === 1) {
-              const isLineNum = (child.nodeName === "TD" && (child.classList.contains("line-number") || child.classList.contains("rd-line-number"))) ||
-                                (child.nodeName === "DIV" && (child.classList.contains("line-numbers") || child.classList.contains("gutter")));
+              const className = child.className || "";
+              const isLineNum = (child.nodeName === "TD" && (className.includes("line-number") || className.includes("rd-line-number"))) ||
+                                (child.nodeName === "DIV" && (className.includes("line-numbers") || className.includes("gutter")));
               if (isLineNum) continue;
             }
 
@@ -580,11 +581,9 @@ export default function App() {
               const childContent = extractText(child);
               
               if (isBlock) {
-                // Ensure block starts on a new line
+                // Only add prefix newline if there is already text and it doesn't end with a newline
                 if (text && !text.endsWith("\n")) text += "\n";
                 text += childContent;
-                // Ensure block ends with a new line
-                if (text && !text.endsWith("\n")) text += "\n";
               } else {
                 text += childContent;
               }
@@ -597,11 +596,10 @@ export default function App() {
         const cleanCode = rawCode.replace(/\r/g, "").replace(/\\n/g, "\n").trim();
         if (!cleanCode) return "";
         
-        // Smart Distinction: 
-        // 1. If it has newlines, it's a block (triple backticks)
-        // 2. If it's a single line and reasonably short, it's inline (single backticks)
-        const hasNewLine = cleanCode.includes("\n") || node.querySelector('br, div.line, tr');
-        if (!hasNewLine && cleanCode.length < 150) {
+        // Final Smart Distinction: 
+        // ONLY use block (triple backticks) if there's a real vertical break (newline)
+        const hasNewLine = cleanCode.includes("\n");
+        if (!hasNewLine && cleanCode.length < 200) {
           return ` \`${cleanCode}\` `;
         }
         
