@@ -554,11 +554,18 @@ export default function App() {
           let text = "";
           for (let i = 0; i < el.childNodes.length; i++) {
             const child = el.childNodes[i];
+            
+            // Skip line numbers inside code macro (Confluence specific)
+            if (child.nodeType === 1) {
+              const isLineNum = (child.nodeName === "TD" && (child.classList.contains("line-number") || child.classList.contains("rd-line-number"))) ||
+                                (child.nodeName === "DIV" && (child.classList.contains("line-numbers") || child.classList.contains("gutter")));
+              if (isLineNum) continue;
+            }
+
             if (child.nodeType === 3) { // Text node
               text += child.textContent;
             } else if (child.nodeType === 1) { // Element node
               const tag = child.nodeName.toUpperCase();
-              // Broaden block detection to include TD, TH, PRE and more
               const isBlock = ["DIV", "P", "TR", "BR", "LI", "TD", "TH", "PRE", "H1", "H2", "H3"].includes(tag) || 
                               child.classList.contains("line") || 
                               child.classList.contains("code-line") ||
@@ -569,8 +576,6 @@ export default function App() {
               if (isBlock) {
                 const needsPrefix = text && !text.endsWith("\n");
                 const needsSuffix = childContent && !childContent.endsWith("\n");
-                // For TD/TH, we only want a newline if it's not the first cell in a TR, 
-                // but to be safe, just ensure each block gets its own lines.
                 text += (needsPrefix ? "\n" : "") + childContent + (tag === "BR" || needsSuffix ? "\n" : "");
               } else {
                 text += childContent;
@@ -730,19 +735,8 @@ export default function App() {
     let markdown = "";
     
     if (html) {
-      // 컨플루언스 코드 매크로 감지 (더 넓은 범위: table 구조 포함)
-      const hasCodeMacro = html.includes('data-macro-name="code"') || 
-                           html.includes('code-content') || 
-                           html.includes('syntaxhighlighter') ||
-                           html.includes('code-block');
-      
-      // plainText에 줄바꿈이 있고 코드 매크로가 감지되면, plainText를 절대적으로 신뢰 (메모장 효과)
-      if (hasCodeMacro && plainText.includes('\n')) {
-        markdown = `\n\n\`\`\`\n${plainText.trim()}\n\`\`\`\n\n`;
-      } else {
-        // 폰트 정보 등이 포함된 복잡한 HTML인 경우 turndown 사용
-        markdown = turndownRef.current.turndown(html);
-      }
+      // 폰트 정보 등이 포함된 복잡한 HTML인 경우 turndown 사용
+      markdown = turndownRef.current.turndown(html);
     } else if (plainText) {
       // 만약 컨플루언스 위키 포맷(h1. 등)이 감지되면 변환기 사용
       if (/^h[1-6]\.\s|^\* |^\|\||\{code/.test(plainText)) {
@@ -811,6 +805,34 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // 5. Handle Web Share Target
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('share') === 'true') {
+      const title = params.get('title') || '';
+      const text = params.get('text') || '';
+      const url = params.get('url') || '';
+      
+      let content = text;
+      if (url) {
+        content = (content ? content + '\n\n' : '') + url;
+      }
+      
+      if (title || content) {
+        setFormTitle(title);
+        setFormContent(content);
+        setFormCategoryId(selectedCategoryId === "all" ? categories[1].id : selectedCategoryId);
+        setIsWriteModalOpen(true);
+        
+        // Clean URL to prevent multiple triggers on reload
+        const newUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, newUrl);
+        
+        showNotification("공유된 내용을 가져왔습니다.");
+      }
+    }
+  }, [categories, selectedCategoryId]);
 
   // Sync with Firestore (Push local data to cloud when logged in)
   useEffect(() => {
