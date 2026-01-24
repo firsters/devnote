@@ -508,16 +508,16 @@ export default function App() {
 
   const htmlInputRef = useRef(null);
   const turndownRef = useRef((() => {
-      const service = new TurndownService({
-        headingStyle: "atx",
-        codeBlockStyle: "fenced",
-        hr: "---",
-        bulletListMarker: "-",
-        preformattedCode: true,
-      });
-      // CRITICAL: Disable indentation-based code blocks to prevent random text from becoming code
-      service.remove("indentedCodeBlock");
-      service.use(gfm);
+    const service = new TurndownService({
+      headingStyle: "atx",
+      codeBlockStyle: "fenced",
+      hr: "---",
+      bulletListMarker: "-",
+      preformattedCode: true,
+    });
+    // CRITICAL: Disable indentation-based code blocks to prevent random text from becoming code
+    service.remove("indentedCodeBlock");
+    service.use(gfm);
 
     // Confluence-specific rules
     // 1. Remove line numbers from Confluence code blocks
@@ -608,9 +608,7 @@ export default function App() {
     md = md.replace(/\{info:?[^\}]*\}([\s\S]*?)\{info\}/g, "> [!NOTE]\n> $1");
     md = md.replace(/\{note:?[^\}]*\}([\s\S]*?)\{note\}/g, "> [!IMPORTANT]\n> $1");
 
-    return md;
-  };
-    
+
     // Lists: # item -> 1. item, * item -> - item
     md = md.replace(/^\#\s+/gm, "1. ");
     
@@ -735,57 +733,58 @@ export default function App() {
     fetchFromCloud();
   }, [user]);
 
-    const noteCounts = useMemo(() => {
-      // 1. Direct counts (by category name - case-insensitive)
-      const directCounts = {};
-      snippets.forEach(s => {
-        const catName = (s.category || "").toLowerCase().trim() || "미분류";
-        directCounts[catName] = (directCounts[catName] || 0) + 1;
-      });
+  const noteCounts = useMemo(() => {
+    // 1. Direct counts (by category name - case-insensitive)
+    const directCounts = {};
+    snippets.forEach(s => {
+      const catName = (s.category || "").toLowerCase().trim() || "미분류";
+      directCounts[catName] = (directCounts[catName] || 0) + 1;
+    });
 
-      // 2. Aggregate counts (hierarchical) using IDs
-      const totalsById = {};
+    // 2. Aggregate counts (hierarchical) using IDs
+    const totalsById = {};
+    
+    const getAggregateCount = (catId, stack = new Set()) => {
+      if (totalsById[catId] !== undefined) return totalsById[catId];
+      if (stack.has(catId)) return 0;
       
-      const getAggregateCount = (catId, stack = new Set()) => {
-        if (totalsById[catId] !== undefined) return totalsById[catId];
-        if (stack.has(catId)) return 0;
-        
-        const cat = categories.find(c => c.id === catId);
-        if (!cat) return 0;
+      const cat = categories.find(c => c.id === catId);
+      if (!cat) return 0;
 
-        const newStack = new Set(stack);
-        newStack.add(catId);
+      const newStack = new Set(stack);
+      newStack.add(catId);
 
-        // Direct count for this category name
-        const searchName = (cat.name || "").toLowerCase().trim();
-        let count = (directCounts[searchName] || 0);
-        
-        // Add counts from subcategories
-        const subCats = categories.filter(c => c.parentId === catId);
-        subCats.forEach(child => {
-          count += getAggregateCount(child.id, newStack);
-        });
-        
-        totalsById[catId] = count;
-        return count;
-      };
-
-      // Calculate totals for all categories
-      const finalCounts = {};
-      categories.forEach(cat => {
-        if (cat.id !== "all") {
-          const total = getAggregateCount(cat.id);
-          finalCounts[cat.id] = total;
-          // Keep name-based for backward compatibility with old snippets category strings
-          const nameKey = (cat.name || "").toLowerCase().trim();
-          if (finalCounts[nameKey] === undefined) {
-            finalCounts[nameKey] = total;
-          }
-        }
+      // Direct count for this category name
+      const searchName = (cat.name || "").toLowerCase().trim();
+      let count = (directCounts[searchName] || 0);
+      
+      // Add counts from subcategories
+      const subCats = categories.filter(c => c.parentId === catId);
+      subCats.forEach(child => {
+        count += getAggregateCount(child.id, newStack);
       });
+      
+      totalsById[catId] = count;
+      return count;
+    };
 
-      return finalCounts;
-    }, [snippets, categories]);
+    // Calculate totals for all categories
+    const finalCounts = {};
+    categories.forEach(cat => {
+      if (cat.id !== "all") {
+        const total = getAggregateCount(cat.id);
+        finalCounts[cat.id] = total;
+        // Keep name-based for backward compatibility with old snippets category strings
+        const nameKey = (cat.name || "").toLowerCase().trim();
+        if (finalCounts[nameKey] === undefined) {
+          finalCounts[nameKey] = total;
+        }
+      }
+    });
+
+    return finalCounts;
+  }, [snippets, categories]);
+
 
   const categoryTree = useMemo(() => {
     const tree = [];
