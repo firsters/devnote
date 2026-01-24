@@ -408,6 +408,10 @@ export default function App() {
   const [expandedSnippetIds, setExpandedSnippetIds] = useState(new Set());
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: "", message: "", onConfirm: null, type: "danger" });
   
+  // Category Rename States
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+
   const [user, setUser] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -678,15 +682,60 @@ export default function App() {
   };
 
   const handleAddCategory = () => {
-    if (!newCatName.trim()) return;
+    const trimmedName = newCatName.trim();
+    if (!trimmedName) return;
+    
+    // Duplicate check
+    if (categories.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())) {
+      showNotification("이미 존재하는 폴더 이름입니다.");
+      return;
+    }
+
     const newCat = {
       id: "cat_" + Date.now(),
-      name: newCatName,
+      name: trimmedName,
       parentId: newCatParentId || null,
     };
     setCategories([...categories, newCat]);
     setNewCatName("");
     showNotification("폴더가 추가되었습니다.");
+  };
+
+  const handleRenameCategory = (id) => {
+    const trimmedName = renameValue.trim();
+    if (!trimmedName) {
+      setEditingCategoryId(null);
+      return;
+    }
+
+    const targetCat = categories.find(c => c.id === id);
+    if (!targetCat) return;
+
+    if (targetCat.name === trimmedName) {
+      setEditingCategoryId(null);
+      return;
+    }
+
+    // Duplicate check
+    if (categories.some(c => c.id !== id && c.name.toLowerCase() === trimmedName.toLowerCase())) {
+      showNotification("이미 존재하는 폴더 이름입니다.");
+      return;
+    }
+
+    const oldName = targetCat.name;
+
+    // Update snippets
+    setSnippets(prev => prev.map(s => 
+      s.category === oldName ? { ...s, category: trimmedName } : s
+    ));
+
+    // Update category
+    setCategories(prev => prev.map(c => 
+      c.id === id ? { ...c, name: trimmedName } : c
+    ));
+
+    setEditingCategoryId(null);
+    showNotification("폴더 이름이 변경되었습니다.");
   };
 
   const handleDeleteCategory = (id) => {
@@ -1018,7 +1067,7 @@ export default function App() {
                 className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-[0.98]"
               >
                 <Globe size={18} />
-                구글로 클라우드 백업
+                로그인 (구글 클라우드 백업)
               </button>
             )}
           </div>
@@ -1311,23 +1360,67 @@ export default function App() {
                   .map((c) => (
                     <div
                       key={c.id}
-                      className="flex justify-between items-center p-2 border rounded bg-slate-50 text-sm"
+                      className="flex justify-between items-center p-2 border rounded bg-slate-50 text-sm group"
                     >
-                      <div className="flex flex-col">
-                        <span>{c.name}</span>
-                        {c.parentId && (
-                          <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                            <CornerDownRight size={10} />{" "}
-                            {categories.find((p) => p.id === c.parentId)?.name}
-                          </span>
+                      <div className="flex-1 flex flex-col min-w-0">
+                        {editingCategoryId === c.id ? (
+                          <div className="flex gap-1 pr-2">
+                             <input
+                              className="flex-1 border border-blue-400 p-1 rounded text-xs outline-none"
+                              value={renameValue}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleRenameCategory(c.id);
+                                if (e.key === 'Escape') setEditingCategoryId(null);
+                              }}
+                            />
+                            <div className="flex gap-0.5">
+                              <button 
+                                onClick={() => handleRenameCategory(c.id)}
+                                className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                              >
+                                <Check size={12} />
+                              </button>
+                              <button 
+                                onClick={() => setEditingCategoryId(null)}
+                                className="p-1 bg-slate-200 text-slate-600 rounded hover:bg-slate-300"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="font-medium truncate">{c.name}</span>
+                            {c.parentId && (
+                              <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                <CornerDownRight size={10} />{" "}
+                                {categories.find((p) => p.id === c.parentId)?.name}
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleDeleteCategory(c.id)}
-                        className="text-slate-400 hover:text-red-500"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <div className="flex gap-1 items-center shrink-0">
+                        {editingCategoryId !== c.id && (
+                          <button
+                            onClick={() => {
+                              setEditingCategoryId(c.id);
+                              setRenameValue(c.name);
+                            }}
+                            className="text-slate-400 hover:text-blue-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteCategory(c.id)}
+                          className="text-slate-400 hover:text-red-500 p-1"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>
