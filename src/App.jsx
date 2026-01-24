@@ -776,29 +776,16 @@ export default function App() {
         if (cat.id !== "all") {
           const total = getAggregateCount(cat.id);
           finalCounts[cat.id] = total;
-          finalCounts[cat.name.toLowerCase().trim()] = total;
+          // Keep name-based for backward compatibility with old snippets category strings
+          const nameKey = (cat.name || "").toLowerCase().trim();
+          if (finalCounts[nameKey] === undefined) {
+            finalCounts[nameKey] = total;
+          }
         }
       });
 
       return finalCounts;
     }, [snippets, categories]);
-
-    // Calculate totals for all categories
-    const finalCounts = {};
-    categories.forEach(cat => {
-      if (cat.id !== "all") {
-        const count = getAggregateCount(cat.id);
-        finalCounts[cat.id] = count;
-        // Keep name-based for backward compatibility with old snippets category strings
-        const nameKey = (cat.name || "").toLowerCase().trim();
-        if (finalCounts[nameKey] === undefined) {
-          finalCounts[nameKey] = count;
-        }
-      }
-    });
-
-    return finalCounts;
-  }, [snippets, categories]);
 
   const categoryTree = useMemo(() => {
     const tree = [];
