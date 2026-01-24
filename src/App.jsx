@@ -191,19 +191,19 @@ const CodeBlock = ({ code }) => {
   };
 
   return (
-    <div className="bg-slate-50 text-slate-800 rounded-lg my-4 overflow-hidden border border-slate-200 shadow-sm group font-sans">
-      <div className="flex justify-between items-center px-3 py-1 bg-slate-100/80 border-b border-slate-200">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Code</span>
+    <div className="bg-[#f4f5f7] text-slate-800 rounded-lg my-4 overflow-hidden border border-slate-200 shadow-sm group font-sans">
+      <div className="flex justify-between items-center px-3 py-1 bg-[#ebecf0] border-b border-slate-200">
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Code Block</span>
         <button
           onClick={handleCopy}
-          className="text-[11px] flex items-center gap-1 text-slate-500 hover:text-blue-600 transition-colors py-0.5 px-2 rounded hover:bg-white"
+          className="text-[11px] flex items-center gap-1.5 text-slate-500 hover:text-blue-600 transition-colors py-0.5 px-2 rounded hover:bg-white"
         >
-          {copied ? <Check size={12} /> : <Copy size={12} />}{" "}
-          {copied ? "복사완료" : "복사"}
+          {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}{" "}
+          {copied ? "복격됨" : "복사"}
         </button>
       </div>
-      <pre className="p-4 text-[13px] font-mono overflow-x-auto custom-scrollbar leading-relaxed bg-white">
-        <code className="block">{code}</code>
+      <pre className="p-4 text-[13px] font-mono overflow-x-auto custom-scrollbar leading-relaxed bg-[#f4f5f7]">
+        <code className="block whitespace-pre">{code}</code>
       </pre>
     </div>
   );
@@ -510,10 +510,12 @@ export default function App() {
     // 2. Specialized Code Block handling (Confluence Macro)
     service.addRule("confluence-code-macro", {
       filter: (node) => 
-        (node.nodeName === "DIV" && (node.classList.contains("code") || node.classList.contains("code-snippet"))) ||
-        (node.nodeName === "PRE" && node.classList.contains("syntaxhighlighter-pre")),
+        (node.nodeName === "DIV" && (node.classList.contains("code-content") || node.classList.contains("code-block"))) ||
+        (node.nodeName === "PRE" && (node.classList.contains("syntaxhighlighter-pre") || node.classList.contains("syntaxhighlighter"))),
       replacement: (content, node) => {
-        const code = node.textContent.trim();
+        // Strip line numbers if they exist
+        const codeNode = node.querySelector('.code-content, pre') || node;
+        const code = codeNode.textContent.replace(/\r/g, "").trim();
         return `\n\n\`\`\`\n${code}\n\`\`\`\n\n`;
       }
     });
@@ -547,8 +549,8 @@ export default function App() {
       replacement: (content, node) => {
         const hLevel = Number(node.nodeName.charAt(1));
         const prefix = "#".repeat(hLevel);
-        // Clean up content to remove markdown-like bits if they survived
-        const cleanContent = content.trim().replace(/^[`\s]+|[`\s]+$/g, "");
+        // Header text should not have leading/trailing spaces to avoid code block triggering
+        const cleanContent = node.textContent.trim();
         return `\n\n${prefix} ${cleanContent}\n\n`;
       },
     });
@@ -556,12 +558,71 @@ export default function App() {
     return service;
   })());
 
+  const convertWikiToMarkdown = (text) => {
+    if (!text) return "";
+    let md = text;
+    
+    // Confluence Wiki Markup conversion
+    // Headers: h1. -> #, h2. -> ##, etc.
+    md = md.replace(/^h([1-6])\.\s+(.*)$/gm, (match, level, content) => {
+      return "#".repeat(level) + " " + content;
+    });
+    
+    // Bold: *text* -> **text**
+    md = md.replace(/\*([^\*]+)\*/g, "**$1**");
+    
+    // Italic: _text_ -> *text*
+    md = md.replace(/_([^_]+)_/g, "*$1*");
+    
+    // Inline Code: {{text}} -> `text`
+    md = md.replace(/\{\{([^\}]+)\}\}/g, "`$1`");
+    
+    // Code Blocks: {code...}...{code} -> ```...```
+    md = md.replace(/\{code(?::\w+)?\}([\s\S]*?)\{code\}/g, "\n\n```\n$1\n```\n\n");
+    
+    // No-format: {noformat}...{noformat} -> ```...```
+    md = md.replace(/\{noformat\}([\s\S]*?)\{noformat\}/g, "\n\n```\n$1\n```\n\n");
+    
+    // Lists: # item -> 1. item, * item -> - item
+    md = md.replace(/^\#\s+/gm, "1. ");
+    
+    // Tables (Simple conversion)
+    // Confluence uses || for headers and | for rows
+    md = md.replace(/^\|\|(.*)\|\|$/gm, (match, content) => {
+      const cols = content.split("||").filter(c => c.trim() !== "");
+      const header = "| " + cols.join(" | ") + " |";
+      const separator = "| " + cols.map(() => "---").join(" | ") + " |";
+      return header + "\n" + separator;
+    });
+    md = md.replace(/^\|(.*)\|$/gm, (match, content) => {
+      if (content.includes("---")) return match; // Already converted header
+      const cols = content.split("|").filter(c => c.trim() !== "");
+      return "| " + cols.join(" | ") + " |";
+    });
+
+    return md;
+  };
+
   const handlePaste = (e) => {
     const html = e.clipboardData.getData('text/html');
+    const plainText = e.clipboardData.getData('text/plain');
+    
+    let markdown = "";
+    
     if (html) {
+      // 폰트 정보 등이 포함된 복잡한 HTML인 경우 turndown 사용
+      markdown = turndownRef.current.turndown(html);
+    } else if (plainText) {
+      // 만약 컨플루언스 위키 포맷(h1. 등)이 감지되면 변환기 사용
+      if (/^h[1-6]\.\s|^\* |^\|\||\{code/.test(plainText)) {
+        markdown = convertWikiToMarkdown(plainText);
+      } else {
+        markdown = plainText;
+      }
+    }
+    
+    if (markdown) {
       e.preventDefault();
-      const markdown = turndownRef.current.turndown(html);
-      
       // 커서 위치에 삽입
       const start = e.target.selectionStart;
       const end = e.target.selectionEnd;
@@ -571,9 +632,9 @@ export default function App() {
       
       setFormContent(before + markdown + after);
       
-      // 붙여넣기 후 커서 위치 조정 (약간의 트릭 필요하지만 간단히 끝만 맞춤)
       setTimeout(() => {
-        e.target.selectionStart = e.target.selectionEnd = start + markdown.length;
+        const nextPos = start + markdown.length;
+        e.target.selectionStart = e.target.selectionEnd = nextPos;
       }, 0);
     }
   };
@@ -658,8 +719,9 @@ export default function App() {
     const totalsById = {};
     
     const getAggregateCount = (catId, stack = new Set()) => {
-      // Return cached result if exist
-      if (totalsById[catId] !== undefined) return totalsById[catId];
+      // Return cached result if exists
+      const cacheKey = catId;
+      if (totalsById[cacheKey] !== undefined) return totalsById[cacheKey];
       
       // Cycle detection
       if (stack.has(catId)) return 0;
@@ -670,17 +732,20 @@ export default function App() {
       const newStack = new Set(stack);
       newStack.add(catId);
 
-      // Direct count
+      // Direct count for this specific category (by name or ID)
       const searchName = (cat.name || "").toLowerCase().trim();
-      let count = directCounts[searchName] || 0;
+      const directId = cat.id;
       
-      // Add child counts
+      // Notes that explicitly target this category name or ID
+      let count = (directCounts[searchName] || 0);
+      
+      // Add counts from subcategories
       const subCats = categories.filter(c => c.parentId === catId);
       subCats.forEach(child => {
         count += getAggregateCount(child.id, newStack);
       });
       
-      totalsById[catId] = count;
+      totalsById[cacheKey] = count;
       return count;
     };
 
@@ -688,9 +753,13 @@ export default function App() {
     const finalCounts = {};
     categories.forEach(cat => {
       if (cat.id !== "all") {
-        // Store by ID for tree usage and by Name for fallback
-        finalCounts[cat.id] = getAggregateCount(cat.id);
-        finalCounts[cat.name] = finalCounts[cat.id];
+        const count = getAggregateCount(cat.id);
+        finalCounts[cat.id] = count;
+        // Keep name-based for backward compatibility with old snippets category strings
+        const nameKey = (cat.name || "").toLowerCase().trim();
+        if (finalCounts[nameKey] === undefined) {
+          finalCounts[nameKey] = count;
+        }
       }
     });
 
