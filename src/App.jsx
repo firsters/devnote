@@ -327,21 +327,22 @@ const CategoryNode = ({
   return (
     <>
       <div
-        onClick={() => !isEditing && onSelect(category.id)}
+        onClick={() => {
+          if (!isEditing) {
+            onSelect(category.id);
+            if (hasChildren) onToggle(category.id);
+          }
+        }}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors mb-0.5 group/cat
           ${isSelected ? "bg-blue-100 text-blue-700 font-bold" : "text-slate-600 hover:bg-slate-100"}
         `}
         style={{ paddingLeft: `${depth * 16 + 12}px` }}
       >
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle(category.id);
-          }}
-          className={`p-0.5 rounded hover:bg-black/5 ${hasChildren ? "visible" : "invisible"}`}
+        <div
+          className={`p-0.5 rounded ${hasChildren ? "visible" : "invisible"}`}
         >
           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </button>
+        </div>
         <span className="flex-shrink-0 opacity-70">{getIcon()}</span>
         
         {isEditing ? (
