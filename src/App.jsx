@@ -11,6 +11,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 
 import { 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   onAuthStateChanged, 
   signOut 
 } from "firebase/auth";
@@ -55,7 +57,7 @@ import {
 // -----------------------------------------------------------------------------
 // 앱 버전 및 설정
 // -----------------------------------------------------------------------------
-const APP_VERSION = "20260122.090600 GMT+9";
+const APP_VERSION = "v1.0.20260124214834 GMT+9";
 const STORAGE_KEY_DATA = "devnote_data_v11";
 const STORAGE_KEY_CATS = "devnote_cats_v11";
 const STORAGE_KEY_VIEW_MODE = "devnote_view_mode_v11";
@@ -612,18 +614,22 @@ export default function App() {
     // Lists: # item -> 1. item, * item -> - item
     md = md.replace(/^\#\s+/gm, "1. ");
     
-    // Tables (Simple conversion)
-    // Confluence uses || for headers and | for rows
+    // Tables (Strict Confluence Wiki conversion)
+    // 1. Headers: ||header1||header2||
     md = md.replace(/^\|\|(.*)\|\|$/gm, (match, content) => {
-      const cols = content.split("||").filter(c => c.trim() !== "");
-      const header = "| " + cols.join(" | ") + " |";
+      const cols = content.split("||").filter(c => c !== "");
+      const header = "| " + cols.map(c => c.trim()).join(" | ") + " |";
       const separator = "| " + cols.map(() => "---").join(" | ") + " |";
-      return header + "\n" + separator;
+      return "\n" + header + "\n" + separator;
     });
+
+    // 2. Rows: |cell1|cell2|
     md = md.replace(/^\|(.*)\|$/gm, (match, content) => {
-      if (content.includes("---")) return match; // Already converted header
-      const cols = content.split("|").filter(c => c.trim() !== "");
-      return "| " + cols.join(" | ") + " |";
+      // Skip if it looks like a separator (already converted header)
+      if (content.includes("---")) return match; 
+      const cols = content.split("|").filter(c => c !== "");
+      if (cols.length === 0) return "";
+      return "| " + cols.map(c => c.trim()).join(" | ") + " |";
     });
 
     return md;
@@ -675,13 +681,33 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY_VIEW_MODE, viewMode);
   }, [viewMode]);
 
+  // Handles redirect result on page load
+  useEffect(() => {
+    if (!auth) return;
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          console.log("Redirect login successful:", result.user.displayName);
+          showNotification(`${result.user.displayName}님, 환영합니다! (Redirect)`);
+        }
+      })
+      .catch((error) => {
+        console.error("Redirect login error:", error);
+        if (error.code !== "auth/web-storage-unsupported") {
+          showNotification(`로그인 오류: ${error.message}`);
+        }
+      });
+  }, []);
+
   // Firebase Auth Observer
   useEffect(() => {
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        showNotification(`${currentUser.displayName}님, 환영합니다!`);
+        // notification is handled in getRedirectResult if it was a redirect
+        // or here for normal initial load/refresh
+        console.log("Auth state changed: logged in as", currentUser.displayName);
       }
     });
     return () => unsubscribe();
@@ -1127,22 +1153,41 @@ export default function App() {
     }
   };
 
-  const handleLogin = async () => {
+  const handleLogin = async (useRedirect = false) => {
     if (!auth || !googleProvider) {
       showNotification("Firebase 설정이 필요합니다. firebase.js를 확인해 주세요.");
       return;
     }
+    
     try {
-      showNotification("로그인을 진행 중입니다...");
-      await signInWithPopup(auth, googleProvider);
+      if (useRedirect) {
+        showNotification("로그인 페이지로 이동합니다...");
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        showNotification("로그인을 진행 중입니다...");
+        await signInWithPopup(auth, googleProvider);
+        showNotification("로그인 되었습니다.");
+      }
     } catch (error) {
       console.error("Login failed:", error);
       let msg = "로그인에 실패했습니다.";
-      if (error.code === 'auth/popup-closed-by-user') msg = "로그인 창이 닫혔습니다.";
-      else if (error.code === 'auth/unauthorized-domain') msg = "승인되지 않은 도메인입니다. Firebase 콘솔 설정을 확인하세요.";
-      else msg += ` (${error.code})`;
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        msg = "로그인 창이 닫혔습니다.";
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        msg = "이전 로그인 요청이 취소되었습니다. 다시 시도해 주세요.";
+      } else if (error.code === 'auth/popup-blocked') {
+        msg = "브라우저에서 팝업이 차단되었습니다. 설정을 확인하거나 아래 버튼을 눌러보세요.";
+      } else if (error.code === 'auth/unauthorized-domain') {
+        msg = "승인되지 않은 도메인입니다. Firebase 콘솔 설정을 확인하세요.";
+      } else {
+        msg += ` [${error.code}] ${error.message}`;
+      }
       
       showNotification(msg);
+      
+      // If popup fails with blocked error, we could offer redirect automatically or via another button
+      console.warn("Hint: If popups are failing, try signInWithRedirect(auth, googleProvider)");
     }
   };
 
@@ -1327,13 +1372,21 @@ export default function App() {
                 </button>
               </div>
             ) : (
-              <button 
-                onClick={handleLogin}
-                className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-[0.98]"
-              >
-                <Globe size={18} />
-                로그인 (구글 클라우드 백업)
-              </button>
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={() => handleLogin(false)}
+                  className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-[0.98]"
+                >
+                  <Globe size={18} />
+                  로그인 (구글 클라우드 백업)
+                </button>
+                <button
+                  onClick={() => handleLogin(true)}
+                  className="text-[11px] text-slate-400 hover:text-slate-600 underline underline-offset-2"
+                >
+                  팝업이 안 뜨나요? 화면 전환으로 로그인
+                </button>
+              </div>
             )}
           </div>
         </nav>
