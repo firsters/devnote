@@ -2,6 +2,18 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import TurndownService from "turndown";
+import { 
+  signInWithPopup, 
+  onAuthStateChanged, 
+  signOut 
+} from "firebase/auth";
+import { 
+  doc, 
+  getDoc, 
+  setDoc, 
+  onSnapshot 
+} from "firebase/firestore";
+import { auth, db, googleProvider } from "./firebase";
 import {
   Search,
   Plus,
@@ -388,6 +400,9 @@ export default function App() {
   });
   const [expandedSnippetIds, setExpandedSnippetIds] = useState(new Set());
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: "", message: "", onConfirm: null, type: "danger" });
+  
+  const [user, setUser] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const htmlInputRef = useRef(null);
   const turndownRef = useRef(new TurndownService({
@@ -427,6 +442,61 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_VIEW_MODE, viewMode);
   }, [viewMode]);
+
+  // Firebase Auth Observer
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        showNotification(`${currentUser.displayName}님, 환영합니다!`);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Sync with Firestore (Push local data to cloud when logged in)
+  useEffect(() => {
+    const syncToCloud = async () => {
+      if (user && db) {
+        setIsSyncing(true);
+        try {
+          await setDoc(doc(db, "users", user.uid), {
+            snippets: snippets,
+            categories: categories,
+            lastSynced: new Date().toISOString()
+          }, { merge: true });
+        } catch (error) {
+          console.error("Cloud sync failed:", error);
+        } finally {
+          setIsSyncing(false);
+        }
+      }
+    };
+
+    const timeoutId = setTimeout(syncToCloud, 2000); // 2초 뒤에 동기화 (디바운싱)
+    return () => clearTimeout(timeoutId);
+  }, [snippets, categories, user]);
+
+  // Initial Fetch from Firestore
+  useEffect(() => {
+    const fetchFromCloud = async () => {
+      if (user && db) {
+        try {
+          const docSnap = await getDoc(doc(db, "users", user.uid));
+          if (docSnap.exists()) {
+            const cloudData = docSnap.data();
+            if (cloudData.snippets) setSnippets(cloudData.snippets);
+            if (cloudData.categories) setCategories(cloudData.categories);
+            showNotification("클라우드 데이터를 불러왔습니다.");
+          }
+        } catch (error) {
+          console.error("Failed to fetch cloud data:", error);
+        }
+      }
+    };
+    fetchFromCloud();
+  }, [user]);
 
   const categoryTree = useMemo(() => {
     const tree = [];
@@ -688,12 +758,42 @@ export default function App() {
     e.target.value = "";
   };
 
+  const handleLogin = async () => {
+    if (!auth || !googleProvider) {
+      showNotification("Firebase 설정이 필요합니다. firebase.js를 확인해 주세요.");
+      return;
+    }
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error("Login failed:", error);
+      showNotification("로그인에 실패했습니다.");
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+      showNotification("로그아웃 되었습니다.");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900 safe-area-inset-top">
       {notification && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[110] px-5 py-3 rounded-full shadow-2xl text-white text-sm font-bold bg-slate-800/90 backdrop-blur border border-slate-700 flex items-center gap-3 animate-fade-in-down">
           <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
           {notification}
+        </div>
+      )}
+
+      {isSyncing && (
+        <div className="fixed bottom-6 right-6 z-[100] flex items-center gap-2 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-[10px] font-bold text-slate-500 animate-fade-in">
+          <RefreshCw size={12} className="animate-spin text-blue-500" />
+          Cloud Syncing...
         </div>
       )}
 
@@ -817,6 +917,34 @@ export default function App() {
               accept=".html,.htm"
               className="hidden"
             />
+          </div>
+
+          <div className="mt-auto pt-6 px-2">
+            {user ? (
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <img src={user.photoURL} alt="profile" className="w-8 h-8 rounded-full border border-slate-200" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-bold text-slate-800 truncate">{user.displayName}</span>
+                    <span className="text-[10px] text-slate-400 truncate">{user.email}</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={handleLogout}
+                  className="w-full py-2 text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                >
+                  로그아웃
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={handleLogin}
+                className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-[0.98]"
+              >
+                <Globe size={18} />
+                구글로 클라우드 백업
+              </button>
+            )}
           </div>
         </nav>
 
