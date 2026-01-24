@@ -566,7 +566,15 @@ export default function App() {
               text += child.textContent;
             } else if (child.nodeType === 1) { // Element node
               const tag = child.nodeName.toUpperCase();
-              const isBlock = ["DIV", "P", "TR", "BR", "LI", "TD", "TH", "PRE", "H1", "H2", "H3"].includes(tag) || 
+              
+              if (tag === "BR") {
+                if (text && !text.endsWith("\n")) text += "\n";
+                // If it's a stand-alone BR with no text before, it might still need a newline
+                else if (!text) text += "\n"; 
+                continue;
+              }
+
+              const isBlock = ["DIV", "P", "TR", "LI", "TD", "TH", "PRE", "H1", "H2", "H3"].includes(tag) || 
                               child.classList.contains("line") || 
                               child.classList.contains("code-line") ||
                               child.classList.contains("syntaxhighlighter-line");
@@ -574,9 +582,9 @@ export default function App() {
               const childContent = extractText(child);
               
               if (isBlock) {
-                const needsPrefix = text && !text.endsWith("\n");
-                const needsSuffix = childContent && !childContent.endsWith("\n");
-                text += (needsPrefix ? "\n" : "") + childContent + (tag === "BR" || needsSuffix ? "\n" : "");
+                if (text && !text.endsWith("\n")) text += "\n";
+                text += childContent;
+                if (text && !text.endsWith("\n")) text += "\n";
               } else {
                 text += childContent;
               }
@@ -589,13 +597,7 @@ export default function App() {
         const cleanCode = rawCode.replace(/\r/g, "").replace(/\\n/g, "\n").trim();
         if (!cleanCode) return "";
         
-        // Smart Check: If it's effectively a single line, treat as inline
-        // CRITICAL: Trim before checking for newlines to avoid trailing newlines from block tags triggering block mode
-        const hasNewLine = cleanCode.includes("\n") || cleanCode.includes("\\n") || node.querySelector('br, div.line, tr');
-        if (!hasNewLine && cleanCode.length < 100) {
-          return ` \`${cleanCode}\` `;
-        }
-        
+        // Strict distinction: Code macros ALWAYS use triple backticks (fenced blocks)
         return `\n\n\`\`\`\n${cleanCode}\n\`\`\`\n\n`;
       }
     });
