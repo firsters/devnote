@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
 import * as mammoth from "mammoth";
@@ -73,6 +76,9 @@ const INITIAL_SNIPPETS = [
     category: "Welcome",
     content: `현재 앱이 **전체 화면(Standalone)**으로 실행 중인지 확인해보세요.
 상단 주소창이 없다면 성공입니다!
+
+**신규 기능: LaTeX 수식 지원**
+- 이제 \`$E = mc^2$\` 와 같이 수식을 입력할 수 있습니다.
 
 **설치 방법 리마인드:**
 - **PC**: 주소창 우측 [앱 설치] 아이콘 클릭
@@ -234,7 +240,8 @@ const MarkdownView = ({ content, code }) => {
   return (
     <div className="devnote-markdown">
       <ReactMarkdown 
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           code({ node, inline, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || "");
