@@ -3,6 +3,12 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
+import * as mammoth from "mammoth";
+import * as pdfjs from "pdfjs-dist";
+
+// PDF.js worker setup
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
 import { 
   signInWithPopup, 
   onAuthStateChanged, 
@@ -754,33 +760,69 @@ export default function App() {
     showNotification("HTML 파일이 다운로드되었습니다.");
   };
 
-  const handleHtmlImport = (e) => {
+  const handleFileImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(event.target.result, "text/html");
-        const content = doc.body.innerText.trim();
-        setSnippets((prev) => [
-          {
-            id: Date.now().toString(),
-            title: `[Import] ${file.name}`,
-            category: "미분류",
-            content: content,
-            code: "",
-            createdAt: new Date().toISOString(),
-          },
-          ...prev,
-        ]);
-        showNotification("파일을 불러왔습니다.");
-      } catch (err) {
-        showNotification("오류가 발생했습니다.");
+
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    
+    try {
+      showNotification(`${file.name} 파일을 읽는 중...`);
+      let content = "";
+      
+      if (fileExtension === 'html' || fileExtension === 'htm') {
+        const text = await file.text();
+        // Use turndown for better markdown conversion
+        content = turndownRef.current.turndown(text);
+      } 
+      else if (fileExtension === 'docx') {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        content = turndownRef.current.turndown(result.value);
+      } 
+      else if (fileExtension === 'pdf') {
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        let fullText = "";
+        
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(" ");
+          fullText += pageText + "\n\n";
+        }
+        content = fullText.trim();
+      } 
+      else {
+        showNotification("지원하지 않는 파일 형식입니다. (.html, .docx, .pdf)");
+        return;
       }
-    };
-    reader.readAsText(file);
-    e.target.value = "";
+
+      if (!content) {
+        showNotification("추출된 내용이 없습니다.");
+        return;
+      }
+
+      setSnippets((prev) => [
+        {
+          id: Date.now().toString(),
+          title: `[Import] ${file.name}`,
+          category: "미분류",
+          content: content,
+          code: "",
+          tags: ["import"],
+          createdAt: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+      showNotification("파일에서 내용을 가져왔습니다.");
+    } catch (err) {
+      console.error("Import error:", err);
+      showNotification("파일을 처리하는 중 오류가 발생했습니다.");
+    } finally {
+      e.target.value = "";
+    }
   };
 
   const handleLogin = async () => {
@@ -936,16 +978,16 @@ export default function App() {
             </button>
             <button
               onClick={() => htmlInputRef.current?.click()}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 rounded-lg text-left"
             >
-              <Download size={16} className="text-slate-500" /> HTML 파일
-              가져오기
+              <Upload size={16} className="text-blue-500" /> 외부 파일
+              가져오기 (PDF, Word, HTML)
             </button>
             <input
               type="file"
               ref={htmlInputRef}
-              onChange={handleHtmlImport}
-              accept=".html,.htm"
+              onChange={handleFileImport}
+              accept=".html,.htm,.docx,.pdf"
               className="hidden"
             />
           </div>
