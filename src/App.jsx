@@ -544,10 +544,9 @@ export default function App() {
       replacement: () => "",
     });
 
-    // 2. Specialized Code Block handling (Confluence Macro)
     service.addRule("confluence-code-macro", {
       filter: (node) => 
-        (node.nodeName === "DIV" && (node.classList.contains("code-content") || node.classList.contains("code-block") || node.classList.contains("code") || node.getAttribute("data-macro-name") === "code")) ||
+        (node.nodeName === "DIV" && (node.getAttribute("data-macro-name") === "code" || node.classList.contains("code-content") || node.classList.contains("code-block"))) ||
         (node.nodeName === "PRE" && (node.classList.contains("syntaxhighlighter-pre") || node.classList.contains("syntaxhighlighter") || node.classList.contains("code"))),
       replacement: (content, node) => {
         const rawCode = node.innerText || node.textContent || "";
