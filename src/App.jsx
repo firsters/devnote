@@ -301,27 +301,34 @@ const CategoryNode = ({
   expandedIds,
   onToggle,
   onSelect,
+  editingId,
+  onEditStart,
+  onEditSave,
+  onEditCancel,
+  onDelete,
+  renameValue,
+  onRenameValueChange,
 }) => {
   const hasChildren = category.children && category.children.length > 0;
   const isExpanded = expandedIds.has(category.id);
   const isSelected = selectedId === category.id;
+  const isEditing = editingId === category.id;
 
   const getIcon = () => {
     if (category.id === "all") return <Folder size={16} />;
-    if (hasChildren)
-      return isExpanded ? (
-        <Folder size={16} className="text-blue-500" />
-      ) : (
-        <Folder size={16} />
-      );
-    return <Hash size={16} />;
+    return (
+      <Folder 
+        size={16} 
+        className={isSelected || isExpanded ? "text-blue-500" : "text-slate-400"} 
+      />
+    );
   };
 
   return (
     <>
       <div
-        onClick={() => onSelect(category.id)}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors mb-0.5
+        onClick={() => !isEditing && onSelect(category.id)}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors mb-0.5 group/cat
           ${isSelected ? "bg-blue-100 text-blue-700 font-bold" : "text-slate-600 hover:bg-slate-100"}
         `}
         style={{ paddingLeft: `${depth * 16 + 12}px` }}
@@ -336,7 +343,59 @@ const CategoryNode = ({
           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
         <span className="flex-shrink-0 opacity-70">{getIcon()}</span>
-        <span className="truncate flex-1">{category.name}</span>
+        
+        {isEditing ? (
+          <div className="flex-1 flex gap-1 pr-1" onClick={(e) => e.stopPropagation()}>
+            <input
+              className="flex-1 border border-blue-400 p-0.5 rounded text-xs outline-none bg-white font-normal"
+              value={renameValue}
+              onChange={(e) => onRenameValueChange(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onEditSave(category.id);
+                if (e.key === 'Escape') onEditCancel();
+              }}
+            />
+            <div className="flex gap-0.5">
+               <button 
+                onClick={() => onEditSave(category.id)}
+                className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                <Check size={10} />
+              </button>
+              <button 
+                onClick={() => onEditCancel()}
+                className="p-1 bg-slate-200 text-slate-600 rounded hover:bg-slate-300"
+              >
+                <X size={10} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <span className="truncate flex-1">{category.name}</span>
+            <div className="flex gap-1 opacity-0 group-hover/cat:opacity-100 transition-opacity translate-x-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditStart(category.id, category.name);
+                }}
+                className="text-slate-400 hover:text-blue-600 p-1"
+              >
+                <Edit2 size={12} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(category.id);
+                }}
+                className="text-slate-400 hover:text-red-500 p-1"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
       {hasChildren &&
         isExpanded &&
@@ -349,6 +408,13 @@ const CategoryNode = ({
             expandedIds={expandedIds}
             onToggle={onToggle}
             onSelect={onSelect}
+            editingId={editingId}
+            onEditStart={onEditStart}
+            onEditSave={onEditSave}
+            onEditCancel={onEditCancel}
+            onDelete={onDelete}
+            renameValue={renameValue}
+            onRenameValueChange={onRenameValueChange}
           />
         ))}
     </>
@@ -986,6 +1052,16 @@ export default function App() {
                   setSelectedCategoryId(id);
                   setSelectedTag(null);
                 }}
+                editingId={editingCategoryId}
+                onEditStart={(id, name) => {
+                  setEditingCategoryId(id);
+                  setRenameValue(name);
+                }}
+                onEditSave={handleRenameCategory}
+                onEditCancel={() => setEditingCategoryId(null)}
+                onDelete={handleDeleteCategory}
+                renameValue={renameValue}
+                onRenameValueChange={setRenameValue}
               />
             ))}
           </ul>
