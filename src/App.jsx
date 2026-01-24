@@ -191,19 +191,19 @@ const CodeBlock = ({ code }) => {
   };
 
   return (
-    <div className="bg-slate-900 text-slate-100 rounded-lg my-3 overflow-hidden border border-slate-700 shadow-sm group">
-      <div className="flex justify-between items-center px-3 py-1.5 bg-slate-800 border-b border-slate-700">
-        <span className="text-xs text-slate-400 font-mono">Code</span>
+    <div className="bg-slate-50 text-slate-800 rounded-lg my-4 overflow-hidden border border-slate-200 shadow-sm group font-sans">
+      <div className="flex justify-between items-center px-3 py-1 bg-slate-100/80 border-b border-slate-200">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Code</span>
         <button
           onClick={handleCopy}
-          className="text-xs flex items-center gap-1 text-slate-400 hover:text-white transition-colors"
+          className="text-[11px] flex items-center gap-1 text-slate-500 hover:text-blue-600 transition-colors py-0.5 px-2 rounded hover:bg-white"
         >
           {copied ? <Check size={12} /> : <Copy size={12} />}{" "}
-          {copied ? "복사됨" : "복사"}
+          {copied ? "복사완료" : "복사"}
         </button>
       </div>
-      <pre className="p-3 text-[13px] font-mono overflow-x-auto custom-scrollbar leading-relaxed">
-        <code>{code}</code>
+      <pre className="p-4 text-[13px] font-mono overflow-x-auto custom-scrollbar leading-relaxed bg-white">
+        <code className="block">{code}</code>
       </pre>
     </div>
   );
@@ -224,7 +224,7 @@ const MarkdownView = ({ content, code }) => {
               return <CodeBlock code={codeContent} />;
             }
             return (
-              <code className={className} {...props}>
+              <code className={`${className} mx-0.5`} {...props}>
                 {children}
               </code>
             );
@@ -656,22 +656,28 @@ export default function App() {
 
     // 2. Aggregate counts (hierarchical) usando IDs
     const totalsById = {};
-    const visited = new Set();
     
-    const getAggregateCount = (catId) => {
+    const getAggregateCount = (catId, stack = new Set()) => {
+      // Return cached result if exist
       if (totalsById[catId] !== undefined) return totalsById[catId];
-      if (visited.has(catId)) return 0; // Prevent infinite loops
-      visited.add(catId);
+      
+      // Cycle detection
+      if (stack.has(catId)) return 0;
       
       const cat = categories.find(c => c.id === catId);
       if (!cat) return 0;
 
+      const newStack = new Set(stack);
+      newStack.add(catId);
+
+      // Direct count
       const searchName = (cat.name || "").toLowerCase().trim();
       let count = directCounts[searchName] || 0;
       
+      // Add child counts
       const subCats = categories.filter(c => c.parentId === catId);
       subCats.forEach(child => {
-        count += getAggregateCount(child.id);
+        count += getAggregateCount(child.id, newStack);
       });
       
       totalsById[catId] = count;
