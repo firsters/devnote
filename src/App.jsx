@@ -618,7 +618,12 @@ export default function App() {
       replacement: (content, node) => {
         const tag = node.nodeName.toLowerCase();
         // Strip problematic style attributes (like height: 1px, width: 1px)
-        const cleanContent = (tag === 'td' || tag === 'th') ? content.replace(/\n+/g, " ").trim() : content;
+        let cleanContent = (tag === 'td' || tag === 'th') ? content.replace(/\n+/g, " ").trim() : content;
+        
+        // Remove literal ** markers as CSS already handles the bolding for TH
+        if (tag === 'th' || tag === 'td') {
+          cleanContent = cleanContent.replace(/\*\*/g, "").replace(/__/g, "");
+        }
         
         // Return raw tag with essential attributes only
         if (tag === 'table') return `\n\n<table class="confluenceTable">${cleanContent}</table>\n\n`;
