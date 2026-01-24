@@ -355,6 +355,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState(() => {
     return localStorage.getItem(STORAGE_KEY_VIEW_MODE) || "compact";
   });
+  const [expandedSnippetIds, setExpandedSnippetIds] = useState(new Set());
 
   const htmlInputRef = useRef(null);
   const turndownRef = useRef(new TurndownService({
@@ -512,6 +513,15 @@ export default function App() {
       showNotification("새 노트가 저장되었습니다.");
     }
     setIsWriteModalOpen(false);
+  };
+
+  const toggleSnippetExpansion = (id) => {
+    setExpandedSnippetIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const handleDeleteSnippet = (id) => {
@@ -820,57 +830,71 @@ export default function App() {
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="max-w-4xl mx-auto space-y-4">
             {filteredSnippets.length > 0 ? (
-              filteredSnippets.map((snippet) => (
-                <div
-                  key={snippet.id}
-                  className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 mb-1">
-                        <Folder size={10} /> {snippet.category}
-                      </span>
-                      <h3 className="text-lg font-bold text-slate-800">
-                        {snippet.title}
-                      </h3>
-                      {snippet.tags && snippet.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {snippet.tags.map((tag) => (
-                            <TagChip
-                              key={tag}
-                              tag={tag}
-                              onClick={setSelectedTag}
-                              active={selectedTag === tag}
-                            />
-                          ))}
+              filteredSnippets.map((snippet) => {
+                const isExpanded = viewMode === 'detailed' || expandedSnippetIds.has(snippet.id);
+                
+                return (
+                  <div
+                    key={snippet.id}
+                    className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
+                  >
+                    <div 
+                      className="p-5 cursor-pointer flex justify-between items-start"
+                      onClick={() => toggleSnippetExpansion(snippet.id)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
+                            <Folder size={10} /> {snippet.category}
+                          </span>
+                          {viewMode === 'compact' && (
+                            <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+                              <ChevronDown size={14} className="text-slate-400" />
+                            </div>
+                          )}
                         </div>
-                      )}
+                        <h3 className="text-lg font-bold text-slate-800 truncate">
+                          {snippet.title}
+                        </h3>
+                        {snippet.tags && snippet.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5 focus:outline-none" onClick={(e) => e.stopPropagation()}>
+                            {snippet.tags.map((tag) => (
+                              <TagChip
+                                key={tag}
+                                tag={tag}
+                                onClick={setSelectedTag}
+                                active={selectedTag === tag}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => openWriteModal(snippet)}
+                          className="text-slate-400 hover:text-blue-600 p-1"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSnippet(snippet.id)}
+                          className="text-slate-400 hover:text-red-500 p-1"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => openWriteModal(snippet)}
-                        className="text-slate-400 hover:text-blue-600"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSnippet(snippet.id)}
-                        className="text-slate-400 hover:text-red-500"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                    {isExpanded && (
+                      <div className="px-5 pb-5 border-t border-slate-100 pt-4">
+                        <MarkdownView
+                          content={snippet.content}
+                          code={snippet.code}
+                        />
+                      </div>
+                    )}
                   </div>
-                  {viewMode === 'detailed' && (
-                    <div className="border-t border-slate-100 pt-3">
-                      <MarkdownView
-                        content={snippet.content}
-                        code={snippet.code}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-20 text-slate-400 flex flex-col items-center">
                 <Search size={48} className="mb-4 opacity-20" />
