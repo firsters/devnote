@@ -568,9 +568,7 @@ export default function App() {
               const tag = child.nodeName.toUpperCase();
               
               if (tag === "BR") {
-                if (text && !text.endsWith("\n")) text += "\n";
-                // If it's a stand-alone BR with no text before, it might still need a newline
-                else if (!text) text += "\n"; 
+                text += "\n";
                 continue;
               }
 
@@ -582,8 +580,10 @@ export default function App() {
               const childContent = extractText(child);
               
               if (isBlock) {
+                // Ensure block starts on a new line
                 if (text && !text.endsWith("\n")) text += "\n";
                 text += childContent;
+                // Ensure block ends with a new line
                 if (text && !text.endsWith("\n")) text += "\n";
               } else {
                 text += childContent;
@@ -597,7 +597,14 @@ export default function App() {
         const cleanCode = rawCode.replace(/\r/g, "").replace(/\\n/g, "\n").trim();
         if (!cleanCode) return "";
         
-        // Strict distinction: Code macros ALWAYS use triple backticks (fenced blocks)
+        // Smart Distinction: 
+        // 1. If it has newlines, it's a block (triple backticks)
+        // 2. If it's a single line and reasonably short, it's inline (single backticks)
+        const hasNewLine = cleanCode.includes("\n") || node.querySelector('br, div.line, tr');
+        if (!hasNewLine && cleanCode.length < 150) {
+          return ` \`${cleanCode}\` `;
+        }
+        
         return `\n\n\`\`\`\n${cleanCode}\n\`\`\`\n\n`;
       }
     });
