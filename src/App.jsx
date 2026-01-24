@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import TurndownService from "turndown";
 import {
   Search,
   Plus,
@@ -188,22 +191,28 @@ const CodeBlock = ({ code }) => {
 
 const MarkdownView = ({ content, code }) => {
   if (!content) return null;
-  const parts = content.split(/(```[\s\S]*?```)/g);
 
   return (
-    <div className="text-sm text-slate-700 leading-7">
-      {parts.map((part, index) => {
-        if (part.startsWith("```") && part.endsWith("```")) {
-          const cleanCode = part.replace(/^```\w*\n?/, "").replace(/```$/, "");
-          return <CodeBlock key={index} code={cleanCode} />;
-        } else {
-          return (
-            <div key={index} className="whitespace-pre-wrap mb-2">
-              {part}
-            </div>
-          );
-        }
-      })}
+    <div className="devnote-markdown">
+      <ReactMarkdown 
+        remarkPlugins={[remarkGfm]}
+        components={{
+          code({ node, inline, className, children, ...props }) {
+            const match = /language-(\w+)/.exec(className || "");
+            const codeContent = String(children).replace(/\n$/, "");
+            if (!inline) {
+              return <CodeBlock code={codeContent} />;
+            }
+            return (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+        }}
+      >
+        {content}
+      </ReactMarkdown>
       {code && (
         <div className="mt-4 pt-4 border-t border-slate-100">
           <div className="text-xs font-bold text-slate-400 mb-1">
@@ -344,6 +353,33 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const htmlInputRef = useRef(null);
+  const turndownRef = useRef(new TurndownService({
+    headingStyle: 'atx',
+    codeBlockStyle: 'fenced',
+    hr: '---'
+  }));
+
+  const handlePaste = (e) => {
+    const html = e.clipboardData.getData('text/html');
+    if (html) {
+      e.preventDefault();
+      const markdown = turndownRef.current.turndown(html);
+      
+      // 커서 위치에 삽입
+      const start = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      const text = formContent;
+      const before = text.substring(0, start);
+      const after = text.substring(end);
+      
+      setFormContent(before + markdown + after);
+      
+      // 붙여넣기 후 커서 위치 조정 (약간의 트릭 필요하지만 간단히 끝만 맞춤)
+      setTimeout(() => {
+        e.target.selectionStart = e.target.selectionEnd = start + markdown.length;
+      }, 0);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(snippets));
@@ -880,6 +916,7 @@ export default function App() {
                   placeholder={`내용 입력...\n\n\`\`\`javascript\nconsole.log("Hello");\n\`\`\``}
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
+                  onPaste={handlePaste}
                 />
               </div>
               <div>

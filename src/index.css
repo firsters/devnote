@@ -5,3 +5,60 @@
 body {
   background-color: #f8fafc;
 }
+
+/* Markdown (Prose) Styling */
+.devnote-markdown {
+  @apply text-slate-700 leading-relaxed overflow-hidden;
+}
+
+.devnote-markdown h1 {
+  @apply text-2xl font-bold mt-6 mb-4 pb-2 border-b border-slate-100;
+}
+.devnote-markdown h2 {
+  @apply text-xl font-bold mt-5 mb-3 pb-1 border-b border-slate-50;
+}
+.devnote-markdown h3 {
+  @apply text-lg font-bold mt-4 mb-2;
+}
+.devnote-markdown p {
+  @apply mb-4;
+}
+.devnote-markdown ul {
+  @apply list-disc pl-5 mb-4 space-y-1;
+}
+.devnote-markdown ol {
+  @apply list-decimal pl-5 mb-4 space-y-1;
+}
+.devnote-markdown li > p {
+  @apply mb-0 inline;
+}
+.devnote-markdown blockquote {
+  @apply border-l-4 border-slate-200 pl-4 py-1 italic text-slate-500 mb-4 bg-slate-50/50 rounded-r;
+}
+.devnote-markdown table {
+  @apply w-full border-collapse mb-4 text-sm;
+}
+.devnote-markdown th {
+  @apply bg-slate-50 border border-slate-200 p-2 font-bold text-left;
+}
+.devnote-markdown td {
+  @apply border border-slate-100 p-2;
+}
+.devnote-markdown hr {
+  @apply my-6 border-slate-100;
+}
+.devnote-markdown a {
+  @apply text-blue-600 underline hover:text-blue-700;
+}
+.devnote-markdown strong {
+  @apply font-bold text-slate-900;
+}
+.devnote-markdown pre {
+  @apply my-0 !important;
+} /* Handle our custom CodeBlock separately */
+.devnote-markdown code {
+  @apply bg-slate-100 text-blue-600 px-1 py-0.5 rounded text-[0.85em] font-mono;
+}
+.devnote-markdown pre code {
+  @apply bg-transparent text-inherit p-0 rounded-none;
+}
