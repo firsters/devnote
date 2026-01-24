@@ -39,6 +39,7 @@ import {
 const APP_VERSION = "20260122.090600 GMT+9";
 const STORAGE_KEY_DATA = "devnote_data_v11";
 const STORAGE_KEY_CATS = "devnote_cats_v11";
+const STORAGE_KEY_VIEW_MODE = "devnote_view_mode_v11";
 const APP_TITLE = "DevNote";
 
 // -----------------------------------------------------------------------------
@@ -351,6 +352,9 @@ export default function App() {
   const [formTags, setFormTags] = useState("");
   const [selectedTag, setSelectedTag] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem(STORAGE_KEY_VIEW_MODE) || "compact";
+  });
 
   const htmlInputRef = useRef(null);
   const turndownRef = useRef(new TurndownService({
@@ -387,6 +391,9 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_CATS, JSON.stringify(categories));
   }, [categories]);
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_VIEW_MODE, viewMode);
+  }, [viewMode]);
 
   const categoryTree = useMemo(() => {
     const tree = [];
@@ -794,6 +801,20 @@ export default function App() {
               </button>
             )}
           </div>
+          <div className="flex items-center gap-2 ml-4">
+            <button 
+              onClick={() => setViewMode(viewMode === 'compact' ? 'detailed' : 'compact')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors
+                ${viewMode === 'detailed' 
+                  ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}
+              `}
+              title={viewMode === 'compact' ? '상세 정보 표시' : '타이틀만 표시'}
+            >
+              {viewMode === 'detailed' ? <Layout size={14}/> : <Menu size={14}/>}
+              <span className="hidden sm:inline">{viewMode === 'detailed' ? '상세 모드' : '목록 모드'}</span>
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
@@ -840,12 +861,14 @@ export default function App() {
                       </button>
                     </div>
                   </div>
-                  <div className="border-t border-slate-100 pt-3">
-                    <MarkdownView
-                      content={snippet.content}
-                      code={snippet.code}
-                    />
-                  </div>
+                  {viewMode === 'detailed' && (
+                    <div className="border-t border-slate-100 pt-3">
+                      <MarkdownView
+                        content={snippet.content}
+                        code={snippet.code}
+                      />
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
