@@ -57,13 +57,22 @@ body {
 .devnote-markdown pre {
   @apply my-0 p-0 bg-transparent rounded-none border-none shadow-none !important;
 }
-.devnote-markdown code {
-  @apply bg-slate-100/90 text-[red] font-medium px-1.5 py-0.5 rounded text-[0.85em] font-mono border border-slate-200/50;
+
+/* Custom scrollbar for code blocks */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
 }
-/* Style red code like Confluence sometimes does or keep blue? Let's stick to professional blue but closer to Confluence gray-ish blue */
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+}
+
 .devnote-markdown code {
   @apply bg-slate-100/90 text-slate-800 px-1.5 py-0.5 rounded text-[0.9em] font-mono border border-slate-200/50;
 }
 .devnote-markdown pre code {
-  @apply bg-transparent text-inherit p-0 rounded-none border-none;
+  @apply bg-transparent text-inherit p-0 rounded-none border-none whitespace-pre;
 }

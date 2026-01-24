@@ -190,21 +190,38 @@ const CodeBlock = ({ code }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const lines = code.split("\n");
+
   return (
     <div className="bg-[#f4f5f7] text-slate-800 rounded-lg my-4 overflow-hidden border border-slate-200 shadow-sm group font-sans">
       <div className="flex justify-between items-center px-3 py-1 bg-[#ebecf0] border-b border-slate-200">
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Code Block</span>
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+          Code Block
+        </span>
         <button
           onClick={handleCopy}
           className="text-[11px] flex items-center gap-1.5 text-slate-500 hover:text-blue-600 transition-colors py-0.5 px-2 rounded hover:bg-white"
         >
-          {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}{" "}
-          {copied ? "복격됨" : "복사"}
+          {copied ? (
+            <Check size={12} className="text-green-500" />
+          ) : (
+            <Copy size={12} />
+          )}{" "}
+          {copied ? "복사됨" : "복사"}
         </button>
       </div>
-      <pre className="p-4 text-[13px] font-mono overflow-x-auto custom-scrollbar leading-relaxed bg-[#f4f5f7]">
-        <code className="block whitespace-pre">{code}</code>
-      </pre>
+      <div className="flex bg-[#f4f5f7] custom-scrollbar overflow-x-auto">
+        {/* Line Numbers */}
+        <div className="bg-[#ebecf0]/50 text-slate-400 text-right py-4 pr-3 pl-4 select-none border-r border-slate-200 text-[12px] font-mono min-w-[3.5rem] leading-relaxed">
+          {lines.map((_, i) => (
+            <div key={i}>{i + 1}</div>
+          ))}
+        </div>
+        {/* Code Content */}
+        <pre className="p-4 text-[13px] font-mono leading-relaxed flex-1">
+          <code className="block whitespace-pre">{code}</code>
+        </pre>
+      </div>
     </div>
   );
 };
@@ -491,13 +508,16 @@ export default function App() {
 
   const htmlInputRef = useRef(null);
   const turndownRef = useRef((() => {
-    const service = new TurndownService({
-      headingStyle: "atx",
-      codeBlockStyle: "fenced",
-      hr: "---",
-      bulletListMarker: "-",
-    });
-    service.use(gfm);
+      const service = new TurndownService({
+        headingStyle: "atx",
+        codeBlockStyle: "fenced",
+        hr: "---",
+        bulletListMarker: "-",
+        preformattedCode: true,
+      });
+      // CRITICAL: Disable indentation-based code blocks to prevent random text from becoming code
+      service.remove("indentedCodeBlock");
+      service.use(gfm);
 
     // Confluence-specific rules
     // 1. Remove line numbers from Confluence code blocks
@@ -507,18 +527,18 @@ export default function App() {
       replacement: () => "",
     });
 
-    // 2. Specialized Code Block handling (Confluence Macro)
-    service.addRule("confluence-code-macro", {
-      filter: (node) => 
-        (node.nodeName === "DIV" && (node.classList.contains("code-content") || node.classList.contains("code-block"))) ||
-        (node.nodeName === "PRE" && (node.classList.contains("syntaxhighlighter-pre") || node.classList.contains("syntaxhighlighter"))),
-      replacement: (content, node) => {
-        // Strip line numbers if they exist
-        const codeNode = node.querySelector('.code-content, pre') || node;
-        const code = codeNode.textContent.replace(/\r/g, "").trim();
-        return `\n\n\`\`\`\n${code}\n\`\`\`\n\n`;
-      }
-    });
+      // 2. Specialized Code Block handling (Confluence Macro)
+      service.addRule("confluence-code-macro", {
+        filter: (node) => 
+          (node.nodeName === "DIV" && (node.classList.contains("code-content") || node.classList.contains("code-block") || node.classList.contains("code"))) ||
+          (node.nodeName === "PRE" && (node.classList.contains("syntaxhighlighter-pre") || node.classList.contains("syntaxhighlighter") || node.classList.contains("code"))),
+        replacement: (content, node) => {
+          // Get the actual code text without HTML if possible, or use node.textContent
+          const code = node.innerText || node.textContent || "";
+          const cleanCode = code.replace(/\r/g, "").trim();
+          return `\n\n\`\`\`\n${cleanCode}\n\`\`\`\n\n`;
+        }
+      });
 
     // 3. Improve inline code merging
     service.addRule("confluence-inline-code", {
@@ -574,14 +594,22 @@ export default function App() {
     // Italic: _text_ -> *text*
     md = md.replace(/_([^_]+)_/g, "*$1*");
     
-    // Inline Code: {{text}} -> `text`
-    md = md.replace(/\{\{([^\}]+)\}\}/g, "`$1`");
-    
     // Code Blocks: {code...}...{code} -> ```...```
     md = md.replace(/\{code(?::\w+)?\}([\s\S]*?)\{code\}/g, "\n\n```\n$1\n```\n\n");
     
     // No-format: {noformat}...{noformat} -> ```...```
     md = md.replace(/\{noformat\}([\s\S]*?)\{noformat\}/g, "\n\n```\n$1\n```\n\n");
+
+    // Monospaced text (Confluence specific): {{text}} -> `text`
+    md = md.replace(/\{\{([^\}]+)\}\}/g, "`$1`");
+
+    // Panels/Info/Success blocks (Simplified)
+    md = md.replace(/\{panel:?[^\}]*\}([\s\S]*?)\{panel\}/g, "> $1");
+    md = md.replace(/\{info:?[^\}]*\}([\s\S]*?)\{info\}/g, "> [!NOTE]\n> $1");
+    md = md.replace(/\{note:?[^\}]*\}([\s\S]*?)\{note\}/g, "> [!IMPORTANT]\n> $1");
+
+    return md;
+  };
     
     // Lists: # item -> 1. item, * item -> - item
     md = md.replace(/^\#\s+/gm, "1. ");
@@ -707,47 +735,53 @@ export default function App() {
     fetchFromCloud();
   }, [user]);
 
-  const noteCounts = useMemo(() => {
-    // 1. Direct counts (by category name - case-insensitive)
-    const directCounts = {};
-    snippets.forEach(s => {
-      const catName = (s.category || "미분류").toLowerCase().trim();
-      directCounts[catName] = (directCounts[catName] || 0) + 1;
-    });
-
-    // 2. Aggregate counts (hierarchical) usando IDs
-    const totalsById = {};
-    
-    const getAggregateCount = (catId, stack = new Set()) => {
-      // Return cached result if exists
-      const cacheKey = catId;
-      if (totalsById[cacheKey] !== undefined) return totalsById[cacheKey];
-      
-      // Cycle detection
-      if (stack.has(catId)) return 0;
-      
-      const cat = categories.find(c => c.id === catId);
-      if (!cat) return 0;
-
-      const newStack = new Set(stack);
-      newStack.add(catId);
-
-      // Direct count for this specific category (by name or ID)
-      const searchName = (cat.name || "").toLowerCase().trim();
-      const directId = cat.id;
-      
-      // Notes that explicitly target this category name or ID
-      let count = (directCounts[searchName] || 0);
-      
-      // Add counts from subcategories
-      const subCats = categories.filter(c => c.parentId === catId);
-      subCats.forEach(child => {
-        count += getAggregateCount(child.id, newStack);
+    const noteCounts = useMemo(() => {
+      // 1. Direct counts (by category name - case-insensitive)
+      const directCounts = {};
+      snippets.forEach(s => {
+        const catName = (s.category || "").toLowerCase().trim() || "미분류";
+        directCounts[catName] = (directCounts[catName] || 0) + 1;
       });
+
+      // 2. Aggregate counts (hierarchical) using IDs
+      const totalsById = {};
       
-      totalsById[cacheKey] = count;
-      return count;
-    };
+      const getAggregateCount = (catId, stack = new Set()) => {
+        if (totalsById[catId] !== undefined) return totalsById[catId];
+        if (stack.has(catId)) return 0;
+        
+        const cat = categories.find(c => c.id === catId);
+        if (!cat) return 0;
+
+        const newStack = new Set(stack);
+        newStack.add(catId);
+
+        // Direct count for this category name
+        const searchName = (cat.name || "").toLowerCase().trim();
+        let count = (directCounts[searchName] || 0);
+        
+        // Add counts from subcategories
+        const subCats = categories.filter(c => c.parentId === catId);
+        subCats.forEach(child => {
+          count += getAggregateCount(child.id, newStack);
+        });
+        
+        totalsById[catId] = count;
+        return count;
+      };
+
+      // Calculate totals for all categories
+      const finalCounts = {};
+      categories.forEach(cat => {
+        if (cat.id !== "all") {
+          const total = getAggregateCount(cat.id);
+          finalCounts[cat.id] = total;
+          finalCounts[cat.name.toLowerCase().trim()] = total;
+        }
+      });
+
+      return finalCounts;
+    }, [snippets, categories]);
 
     // Calculate totals for all categories
     const finalCounts = {};
