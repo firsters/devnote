@@ -558,7 +558,8 @@ export default function App() {
               text += child.textContent;
             } else if (child.nodeType === 1) { // Element node
               const tag = child.nodeName;
-              const isBlock = ["DIV", "P", "TR", "BR", "LI"].includes(tag) || 
+              // Broaden block detection to include TD, TH, PRE and more
+              const isBlock = ["DIV", "P", "TR", "BR", "LI", "TD", "TH", "PRE", "H1", "H2", "H3"].includes(tag) || 
                               child.classList.contains("line") || 
                               child.classList.contains("code-line") ||
                               child.classList.contains("syntaxhighlighter-line");
@@ -722,8 +723,17 @@ export default function App() {
     let markdown = "";
     
     if (html) {
-      // 폰트 정보 등이 포함된 복잡한 HTML인 경우 turndown 사용
-      markdown = turndownRef.current.turndown(html);
+      // 컨플루언스 코드 매크로 단독 복사 감지 (plainText에 줄바꿈이 있다면 그것이 가장 정확함)
+      const isPureCodeMacro = (html.includes('data-macro-name="code"') || html.includes('code-content')) && 
+                              !html.includes('<table') && 
+                              plainText.includes('\n');
+      
+      if (isPureCodeMacro) {
+        markdown = `\n\n\`\`\`\n${plainText.trim()}\n\`\`\`\n\n`;
+      } else {
+        // 폰트 정보 등이 포함된 복잡한 HTML인 경우 turndown 사용
+        markdown = turndownRef.current.turndown(html);
+      }
     } else if (plainText) {
       // 만약 컨플루언스 위키 포맷(h1. 등)이 감지되면 변환기 사용
       if (/^h[1-6]\.\s|^\* |^\|\||\{code/.test(plainText)) {
