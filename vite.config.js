@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5242880, // 5MiB
+      },
       manifest: {
         name: 'DevNote',
         short_name: 'DevNote',
