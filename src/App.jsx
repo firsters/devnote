@@ -585,11 +585,13 @@ export default function App() {
           return text;
         };
 
-        const cleanCode = extractText(node).replace(/\r/g, "").trim();
+        const rawCode = extractText(node);
+        const cleanCode = rawCode.replace(/\r/g, "").replace(/\\n/g, "\n").trim();
         if (!cleanCode) return "";
         
         // Smart Check: If it's effectively a single line, treat as inline
-        const hasNewLine = cleanCode.includes("\n") || node.querySelector('br, div.line, tr');
+        // CRITICAL: Trim before checking for newlines to avoid trailing newlines from block tags triggering block mode
+        const hasNewLine = cleanCode.includes("\n") || cleanCode.includes("\\n") || node.querySelector('br, div.line, tr');
         if (!hasNewLine && cleanCode.length < 100) {
           return ` \`${cleanCode}\` `;
         }
@@ -608,7 +610,15 @@ export default function App() {
           node.style.fontFamily?.toLowerCase().includes("mono") ||
           node.style.backgroundColor === "rgb(244, 245, 247)" ||
           node.style.backgroundColor === "rgb(241, 242, 244)" ||
-          node.style.backgroundColor === "var(--ds-background-neutral-subtle, #F4F5F7)"
+          node.style.backgroundColor === "rgb(238, 238, 238)" ||
+          node.style.backgroundColor === "#f4f5f7" ||
+          node.style.backgroundColor === "#eeeeee" ||
+          node.style.backgroundColor === "var(--ds-background-neutral-subtle, #F4F5F7)" ||
+          node.getAttribute("style")?.includes("background-color") && (
+            node.getAttribute("style").includes("#f4f5f7") || 
+            node.getAttribute("style").includes("#eeeeee") ||
+            node.getAttribute("style").includes("rgb(244, 245, 247)")
+          )
         )),
       replacement: (content) => {
         const cleanContent = content.trim();
@@ -622,8 +632,8 @@ export default function App() {
       filter: ["table", "thead", "tbody", "tr", "th", "td", "colgroup", "col"],
       replacement: (content, node) => {
         const tag = node.nodeName.toLowerCase();
-        // Strip problematic style attributes (like height: 1px, width: 1px)
-        let cleanContent = (tag === 'td' || tag === 'th') ? content.replace(/\n+/g, " ").trim() : content;
+        // Stop collapsing newlines in cells to allow code blocks and preserved formatting
+        let cleanContent = content;
         
         // Remove literal ** markers as CSS already handles the bolding for TH
         if (tag === 'th' || tag === 'td') {
