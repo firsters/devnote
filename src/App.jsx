@@ -549,29 +549,44 @@ export default function App() {
         (node.nodeName === "DIV" && (node.getAttribute("data-macro-name") === "code" || node.classList.contains("code-content") || node.classList.contains("code-block"))) ||
         (node.nodeName === "PRE" && (node.classList.contains("syntaxhighlighter-pre") || node.classList.contains("syntaxhighlighter") || node.classList.contains("code"))),
       replacement: (content, node) => {
-        // Try to find individual lines if they exist (common in Confluence syntax highlighter)
-        const lineNodes = node.querySelectorAll('.line, .code-line, .syntaxhighlighter-line');
-        let cleanCode = "";
-        
-        if (lineNodes.length > 0) {
-          cleanCode = Array.from(lineNodes)
-            .map(ln => ln.innerText || ln.textContent)
-            .join('\n');
-        } else {
-          // Fallback to innerText/textContent
-          cleanCode = (node.innerText || node.textContent || "").replace(/\r/g, "");
-        }
+        // Robust recursive text extraction to preserve line breaks
+        const extractText = (el) => {
+          let text = "";
+          for (let i = 0; i < el.childNodes.length; i++) {
+            const child = el.childNodes[i];
+            if (child.nodeType === 3) { // Text node
+              text += child.textContent;
+            } else if (child.nodeType === 1) { // Element node
+              const tag = child.nodeName;
+              const isBlock = ["DIV", "P", "TR", "BR", "LI"].includes(tag) || 
+                              child.classList.contains("line") || 
+                              child.classList.contains("code-line") ||
+                              child.classList.contains("syntaxhighlighter-line");
+              
+              const childContent = extractText(child);
+              
+              if (isBlock) {
+                const needsPrefix = text && !text.endsWith("\n");
+                const needsSuffix = childContent && !childContent.endsWith("\n");
+                text += (needsPrefix ? "\n" : "") + childContent + (tag === "BR" || needsSuffix ? "\n" : "");
+              } else {
+                text += childContent;
+              }
+            }
+          }
+          return text;
+        };
 
-        const trimmedCode = cleanCode.trim();
-        if (!trimmedCode) return "";
+        const cleanCode = extractText(node).replace(/\r/g, "").trim();
+        if (!cleanCode) return "";
         
         // Smart Check: If it's effectively a single line, treat as inline
-        const hasNewLine = trimmedCode.includes("\n") || cleanCode.includes("\n") || node.querySelector('br');
-        if (!hasNewLine && trimmedCode.length < 100) {
-          return ` \`${trimmedCode}\` `;
+        const hasNewLine = cleanCode.includes("\n") || node.querySelector('br, div.line, tr');
+        if (!hasNewLine && cleanCode.length < 100) {
+          return ` \`${cleanCode}\` `;
         }
         
-        return `\n\n\`\`\`\n${trimmedCode}\n\`\`\`\n\n`;
+        return `\n\n\`\`\`\n${cleanCode}\n\`\`\`\n\n`;
       }
     });
 
