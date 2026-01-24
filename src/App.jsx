@@ -339,6 +339,7 @@ export default function App() {
   const [newCatName, setNewCatName] = useState("");
   const [newCatParentId, setNewCatParentId] = useState("");
 
+  const [formTags, setFormTags] = useState("");
   const [selectedTag, setSelectedTag] = useState(null);
 
   const htmlInputRef = useRef(null);
