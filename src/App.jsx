@@ -406,34 +406,35 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   const htmlInputRef = useRef(null);
-  const turndownRef = useRef(() => {
+  const turndownRef = useRef((() => {
     const service = new TurndownService({
-      headingStyle: 'atx',
-      codeBlockStyle: 'fenced',
-      hr: '---'
+      headingStyle: "atx",
+      codeBlockStyle: "fenced",
+      hr: "---",
     });
     service.use(gfm);
-    
+
     // Confluence-specific rules
-    service.addRule('confluence-tasks', {
-      filter: (node) => node.nodeName === 'LI' && node.classList.contains('task-list-item'),
+    service.addRule("confluence-tasks", {
+      filter: (node) =>
+        node.nodeName === "LI" && node.classList.contains("task-list-item"),
       replacement: (content, node) => {
         const checked = node.querySelector('input[type="checkbox"]')?.checked;
-        return `- [${checked ? 'x' : ' '}] ${content}\n`;
-      }
+        return `- [${checked ? "x" : " "}] ${content}\n`;
+      },
     });
 
-    service.addRule('confluence-headers', {
-      filter: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+    service.addRule("confluence-headers", {
+      filter: ["h1", "h2", "h3", "h4", "h5", "h6"],
       replacement: (content, node, options) => {
         const hLevel = Number(node.nodeName.charAt(1));
-        const prefix = '#'.repeat(hLevel);
+        const prefix = "#".repeat(hLevel);
         return `\n\n${prefix} ${content}\n\n`;
-      }
+      },
     });
 
     return service;
-  }());
+  })());
 
   const handlePaste = (e) => {
     const html = e.clipboardData.getData('text/html');
