@@ -522,7 +522,7 @@ export default function App() {
       codeBlockStyle: "fenced",
       hr: "---",
       bulletListMarker: "-",
-      preformattedCode: true,
+      preformattedCode: false, // Prevent <pre> without code tags from becoming code blocks automatically
     });
     // CRITICAL: Disable indentation-based code blocks to prevent random text from becoming code
     service.remove("indentedCodeBlock");
@@ -539,12 +539,12 @@ export default function App() {
       // 2. Specialized Code Block handling (Confluence Macro)
       service.addRule("confluence-code-macro", {
         filter: (node) => 
-          (node.nodeName === "DIV" && (node.classList.contains("code-content") || node.classList.contains("code-block") || node.classList.contains("code"))) ||
+          (node.nodeName === "DIV" && (node.classList.contains("code-content") || node.classList.contains("code-block") || node.classList.contains("code") || node.getAttribute("data-macro-name") === "code")) ||
           (node.nodeName === "PRE" && (node.classList.contains("syntaxhighlighter-pre") || node.classList.contains("syntaxhighlighter") || node.classList.contains("code"))),
         replacement: (content, node) => {
-          // Get the actual code text without HTML if possible, or use node.textContent
           const code = node.innerText || node.textContent || "";
           const cleanCode = code.replace(/\r/g, "").trim();
+          if (!cleanCode) return "";
           return `\n\n\`\`\`\n${cleanCode}\n\`\`\`\n\n`;
         }
       });
@@ -578,10 +578,35 @@ export default function App() {
       replacement: (content, node) => {
         const hLevel = Number(node.nodeName.charAt(1));
         const prefix = "#".repeat(hLevel);
-        // Header text should not have leading/trailing spaces to avoid code block triggering
         const cleanContent = node.textContent.trim();
         return `\n\n${prefix} ${cleanContent}\n\n`;
       },
+    });
+
+    // 4. Flatten Table Cells (Critical for GFM Tables)
+    service.addRule("confluence-table-cells", {
+      filter: ["th", "td"],
+      replacement: (content, node) => {
+        // Flatten content: remove newlines and extra spaces inside cells
+        // Also handle <br> specifically
+        let flatContent = content.replace(/[\n\r]+/g, " ").trim();
+        const name = node.nodeName.toLowerCase();
+        return `<${name}>${flatContent}</${name}>`;
+      }
+    });
+
+    // 5. Clean up extra wrappers often found in Confluence
+    service.addRule("confluence-wrappers", {
+      filter: (node) => 
+        (node.nodeName === "DIV" && (node.classList.contains("content-wrapper") || node.classList.contains("innerCell"))) ||
+        (node.nodeName === "SPAN" && node.classList.contains("confluence-anchor-link")),
+      replacement: (content) => content
+    });
+
+    // 6. Remove junk tags
+    service.addRule("remove-junk", {
+      filter: ["style", "script", "noscript", "meta"],
+      replacement: () => ""
     });
 
     return service;
