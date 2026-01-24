@@ -620,18 +620,19 @@ export default function App() {
 
     // 2. Aggregate counts (hierarchical) usando IDs
     const totalsById = {};
+    const visited = new Set();
     
     const getAggregateCount = (catId) => {
       if (totalsById[catId] !== undefined) return totalsById[catId];
+      if (visited.has(catId)) return 0; // Prevent infinite loops
+      visited.add(catId);
       
       const cat = categories.find(c => c.id === catId);
       if (!cat) return 0;
 
-      // Direct count for this category name
-      const searchName = cat.name.toLowerCase().trim();
+      const searchName = (cat.name || "").toLowerCase().trim();
       let count = directCounts[searchName] || 0;
       
-      // Add counts from subcategories
       const subCats = categories.filter(c => c.parentId === catId);
       subCats.forEach(child => {
         count += getAggregateCount(child.id);
@@ -645,7 +646,9 @@ export default function App() {
     const finalCounts = {};
     categories.forEach(cat => {
       if (cat.id !== "all") {
-        finalCounts[cat.name] = getAggregateCount(cat.id);
+        // Store by ID for tree usage and by Name for fallback
+        finalCounts[cat.id] = getAggregateCount(cat.id);
+        finalCounts[cat.name] = finalCounts[cat.id];
       }
     });
 
@@ -653,10 +656,10 @@ export default function App() {
   }, [snippets, categories]);
 
   const categoryTree = useMemo(() => {
-    const totals = {};
+    const tree = [];
     const map = {};
     categories.forEach((cat) => {
-      map[cat.id] = { ...cat, children: [], totalCount: noteCounts[cat.name] || 0 };
+      map[cat.id] = { ...cat, children: [], totalCount: noteCounts[cat.id] ?? noteCounts[cat.name] ?? 0 };
     });
     categories.forEach((cat) => {
       if (cat.id === "all") return;
