@@ -308,6 +308,7 @@ const CategoryNode = ({
   onDelete,
   renameValue,
   onRenameValueChange,
+  noteCount,
 }) => {
   const hasChildren = category.children && category.children.length > 0;
   const isExpanded = expandedIds.has(category.id);
@@ -375,6 +376,11 @@ const CategoryNode = ({
         ) : (
           <>
             <span className="truncate flex-1">{category.name}</span>
+            {noteCount !== undefined && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full shrink-0 group-hover/cat:bg-white transition-colors">
+                {noteCount}
+              </span>
+            )}
             <div className="flex gap-1 opacity-0 group-hover/cat:opacity-100 transition-opacity translate-x-1">
               <button
                 onClick={(e) => {
@@ -416,6 +422,7 @@ const CategoryNode = ({
             onDelete={onDelete}
             renameValue={renameValue}
             onRenameValueChange={onRenameValueChange}
+            noteCount={noteCount}
           />
         ))}
     </>
@@ -602,6 +609,14 @@ export default function App() {
     };
     fetchFromCloud();
   }, [user]);
+
+  const noteCounts = useMemo(() => {
+    const counts = {};
+    snippets.forEach(s => {
+      counts[s.category] = (counts[s.category] || 0) + 1;
+    });
+    return counts;
+  }, [snippets]);
 
   const categoryTree = useMemo(() => {
     const tree = [];
@@ -1033,7 +1048,11 @@ export default function App() {
               }}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer mb-1 ${selectedCategoryId === "all" && !selectedTag && !searchQuery ? "bg-blue-100 text-blue-700 font-bold" : "text-slate-600 hover:bg-slate-100"}`}
             >
-              <Folder size={16} /> <span>전체 보기</span>
+              <Folder size={16} /> 
+              <span className="flex-1">전체 보기</span>
+              <span className="text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full">
+                {snippets.length}
+              </span>
             </li>
             {categoryTree.map((cat) => (
               <CategoryNode
@@ -1063,6 +1082,7 @@ export default function App() {
                 onDelete={handleDeleteCategory}
                 renameValue={renameValue}
                 onRenameValueChange={setRenameValue}
+                noteCount={noteCounts[cat.name] || 0}
               />
             ))}
           </ul>
