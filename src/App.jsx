@@ -134,13 +134,13 @@ const usePWAInjection = () => {
       orientation: "portrait-primary",
       icons: [
         {
-          src: "https://cdn-icons-png.flaticon.com/512/1005/1005141.png",
+          src: "/logo.png",
           sizes: "512x512",
           type: "image/png",
           purpose: "any maskable",
         },
         {
-          src: "https://cdn-icons-png.flaticon.com/192/1005/1005141.png",
+          src: "/logo.png",
           sizes: "192x192",
           type: "image/png",
         },
@@ -167,7 +167,7 @@ const usePWAInjection = () => {
       iconLink.rel = "apple-touch-icon";
       document.head.appendChild(iconLink);
     }
-    iconLink.href = "https://cdn-icons-png.flaticon.com/192/1005/1005141.png";
+    iconLink.href = "/logo.png";
   }, []);
 };
 
