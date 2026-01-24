@@ -422,7 +422,7 @@ const CategoryNode = ({
             onDelete={onDelete}
             renameValue={renameValue}
             onRenameValueChange={onRenameValueChange}
-            noteCount={noteCount}
+            noteCount={child.totalCount}
           />
         ))}
     </>
@@ -611,18 +611,52 @@ export default function App() {
   }, [user]);
 
   const noteCounts = useMemo(() => {
-    const counts = {};
+    // 1. Direct counts (by category name - case-insensitive)
+    const directCounts = {};
     snippets.forEach(s => {
-      counts[s.category] = (counts[s.category] || 0) + 1;
+      const catName = (s.category || "미분류").toLowerCase().trim();
+      directCounts[catName] = (directCounts[catName] || 0) + 1;
     });
-    return counts;
-  }, [snippets]);
+
+    // 2. Aggregate counts (hierarchical) usando IDs
+    const totalsById = {};
+    
+    const getAggregateCount = (catId) => {
+      if (totalsById[catId] !== undefined) return totalsById[catId];
+      
+      const cat = categories.find(c => c.id === catId);
+      if (!cat) return 0;
+
+      // Direct count for this category name
+      const searchName = cat.name.toLowerCase().trim();
+      let count = directCounts[searchName] || 0;
+      
+      // Add counts from subcategories
+      const subCats = categories.filter(c => c.parentId === catId);
+      subCats.forEach(child => {
+        count += getAggregateCount(child.id);
+      });
+      
+      totalsById[catId] = count;
+      return count;
+    };
+
+    // Calculate totals for all categories
+    const finalCounts = {};
+    categories.forEach(cat => {
+      if (cat.id !== "all") {
+        finalCounts[cat.name] = getAggregateCount(cat.id);
+      }
+    });
+
+    return finalCounts;
+  }, [snippets, categories]);
 
   const categoryTree = useMemo(() => {
-    const tree = [];
+    const totals = {};
     const map = {};
     categories.forEach((cat) => {
-      map[cat.id] = { ...cat, children: [] };
+      map[cat.id] = { ...cat, children: [], totalCount: noteCounts[cat.name] || 0 };
     });
     categories.forEach((cat) => {
       if (cat.id === "all") return;
@@ -633,7 +667,7 @@ export default function App() {
       }
     });
     return tree;
-  }, [categories]);
+  }, [categories, noteCounts]);
 
   const getDescendantIds = (rootId) => {
     const ids = [rootId];
@@ -1082,7 +1116,7 @@ export default function App() {
                 onDelete={handleDeleteCategory}
                 renameValue={renameValue}
                 onRenameValueChange={setRenameValue}
-                noteCount={noteCounts[cat.name] || 0}
+                noteCount={cat.totalCount}
               />
             ))}
           </ul>
