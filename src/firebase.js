@@ -17,11 +17,14 @@ const firebaseConfig = {
 let app, auth, db, googleProvider;
 
 try {
-  if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+  if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
     googleProvider = new GoogleAuthProvider();
+    console.log("Firebase initialized successfully");
+  } else {
+    console.warn("Firebase config is missing or invalid. Check your .env file.");
   }
 } catch (error) {
   console.error("Firebase initialization failed:", error);

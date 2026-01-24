@@ -492,13 +492,16 @@ export default function App() {
       if (user && db) {
         setIsSyncing(true);
         try {
+          console.log("Cloud sync started for user:", user.uid);
           await setDoc(doc(db, "users", user.uid), {
             snippets: snippets,
             categories: categories,
             lastSynced: new Date().toISOString()
           }, { merge: true });
+          console.log("Cloud sync successful");
         } catch (error) {
           console.error("Cloud sync failed:", error);
+          showNotification(`동기화 실패: ${error.message} (권한 설정을 확인하세요)`);
         } finally {
           setIsSyncing(false);
         }
