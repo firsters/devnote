@@ -228,7 +228,7 @@ const CodeBlock = ({ code }) => {
         </div>
         {/* Code Content */}
         <pre className="p-4 text-[13px] font-mono leading-relaxed flex-1">
-          <code className="block whitespace-pre">{code}</code>
+          <code className="block whitespace-pre-wrap break-all">{code}</code>
         </pre>
       </div>
     </div>
