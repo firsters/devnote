@@ -55,7 +55,7 @@ body {
   @apply font-semibold text-slate-900;
 }
 .devnote-markdown pre {
-  @apply my-0 !important p-0 bg-transparent rounded-none border-none shadow-none;
+  @apply my-0 p-0 bg-transparent rounded-none border-none shadow-none !important;
 }
 .devnote-markdown code {
   @apply bg-slate-100/90 text-[red] font-medium px-1.5 py-0.5 rounded text-[0.85em] font-mono border border-slate-200/50;
