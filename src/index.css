@@ -9,56 +9,57 @@ body {
 /* Markdown (Prose) Styling */
 .devnote-markdown {
   @apply text-slate-700 leading-relaxed overflow-hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
 .devnote-markdown h1 {
-  @apply text-2xl font-bold mt-6 mb-4 pb-2 border-b border-slate-100;
+  @apply text-2xl font-bold mt-8 mb-4 pb-2 border-b border-slate-200 text-slate-900;
 }
 .devnote-markdown h2 {
-  @apply text-xl font-bold mt-5 mb-3 pb-1 border-b border-slate-50;
+  @apply text-xl font-bold mt-7 mb-3 pb-1 border-b border-slate-100 text-slate-800;
 }
 .devnote-markdown h3 {
-  @apply text-lg font-bold mt-4 mb-2;
+  @apply text-lg font-bold mt-6 mb-2 text-slate-800;
 }
 .devnote-markdown p {
   @apply mb-4;
 }
 .devnote-markdown ul {
-  @apply list-disc pl-5 mb-4 space-y-1;
+  @apply list-disc pl-6 mb-4 space-y-1.5;
 }
 .devnote-markdown ol {
-  @apply list-decimal pl-5 mb-4 space-y-1;
+  @apply list-decimal pl-6 mb-4 space-y-1.5;
 }
 .devnote-markdown li > p {
   @apply mb-0 inline;
 }
 .devnote-markdown blockquote {
-  @apply border-l-4 border-slate-200 pl-4 py-1 italic text-slate-500 mb-4 bg-slate-50/50 rounded-r;
+  @apply border-l-4 border-blue-200 pl-4 py-1 italic text-slate-600 mb-4 bg-blue-50/30 rounded-r;
 }
 .devnote-markdown table {
-  @apply w-full border-collapse mb-4 text-sm;
+  @apply w-full border-collapse mb-4 text-sm bg-white;
 }
 .devnote-markdown th {
-  @apply bg-slate-50 border border-slate-200 p-2 font-bold text-left;
+  @apply bg-slate-50 border border-slate-200 p-2.5 font-bold text-left text-slate-700;
 }
 .devnote-markdown td {
-  @apply border border-slate-100 p-2;
+  @apply border border-slate-200 p-2.5;
 }
 .devnote-markdown hr {
-  @apply my-6 border-slate-100;
+  @apply my-8 border-slate-200;
 }
 .devnote-markdown a {
-  @apply text-blue-600 underline hover:text-blue-700;
+  @apply text-blue-600 underline decoration-blue-200 underline-offset-2 hover:text-blue-700 hover:decoration-blue-400;
 }
 .devnote-markdown strong {
   @apply font-bold text-slate-900;
 }
 .devnote-markdown pre {
   @apply my-0 !important;
-} /* Handle our custom CodeBlock separately */
+} 
 .devnote-markdown code {
-  @apply bg-slate-100 text-blue-600 px-1 py-0.5 rounded text-[0.85em] font-mono;
+  @apply bg-slate-100/80 text-blue-700 px-1.5 py-0.5 rounded text-[0.9em] font-mono border border-slate-200/50;
 }
 .devnote-markdown pre code {
-  @apply bg-transparent text-inherit p-0 rounded-none;
+  @apply bg-transparent text-inherit p-0 rounded-none border-none;
 }

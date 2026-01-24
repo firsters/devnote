@@ -202,7 +202,7 @@ const CodeBlock = ({ code }) => {
           {copied ? "복사됨" : "복사"}
         </button>
       </div>
-      <pre className="p-4 text-sm font-mono overflow-x-auto custom-scrollbar leading-relaxed">
+      <pre className="p-3 text-[13px] font-mono overflow-x-auto custom-scrollbar leading-relaxed">
         <code>{code}</code>
       </pre>
     </div>
@@ -495,10 +495,44 @@ export default function App() {
       headingStyle: "atx",
       codeBlockStyle: "fenced",
       hr: "---",
+      bulletListMarker: "-",
     });
     service.use(gfm);
 
     // Confluence-specific rules
+    // 1. Remove line numbers from Confluence code blocks
+    service.addRule("confluence-line-numbers", {
+      filter: (node) => 
+        node.nodeName === "TD" && (node.classList.contains("line") || node.classList.contains("rd-line-number")),
+      replacement: () => "",
+    });
+
+    // 2. Specialized Code Block handling (Confluence Macro)
+    service.addRule("confluence-code-macro", {
+      filter: (node) => 
+        (node.nodeName === "DIV" && (node.classList.contains("code") || node.classList.contains("code-snippet"))) ||
+        (node.nodeName === "PRE" && node.classList.contains("syntaxhighlighter-pre")),
+      replacement: (content, node) => {
+        const code = node.textContent.trim();
+        return `\n\n\`\`\`\n${code}\n\`\`\`\n\n`;
+      }
+    });
+
+    // 3. Improve inline code merging
+    service.addRule("confluence-inline-code", {
+      filter: (node) => 
+        ["code", "tt", "kbd", "samp"].includes(node.nodeName.toLowerCase()) ||
+        (node.nodeName === "SPAN" && (
+          node.classList.contains("code") || 
+          node.style.fontFamily?.toLowerCase().includes("mono") ||
+          node.style.backgroundColor === "rgb(244, 245, 247)" // Confluence inline code bg
+        )),
+      replacement: (content) => {
+        if (!content.trim()) return "";
+        return `\`${content.trim().replace(/`/g, "\\`")}\``;
+      }
+    });
+
     service.addRule("confluence-tasks", {
       filter: (node) =>
         node.nodeName === "LI" && node.classList.contains("task-list-item"),
@@ -510,10 +544,12 @@ export default function App() {
 
     service.addRule("confluence-headers", {
       filter: ["h1", "h2", "h3", "h4", "h5", "h6"],
-      replacement: (content, node, options) => {
+      replacement: (content, node) => {
         const hLevel = Number(node.nodeName.charAt(1));
         const prefix = "#".repeat(hLevel);
-        return `\n\n${prefix} ${content}\n\n`;
+        // Clean up content to remove markdown-like bits if they survived
+        const cleanContent = content.trim().replace(/^[`\s]+|[`\s]+$/g, "");
+        return `\n\n${prefix} ${cleanContent}\n\n`;
       },
     });
 
