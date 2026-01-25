@@ -56,6 +56,8 @@ import {
   FilePlus,
   Sparkles,
   Loader2,
+  Camera,
+  Image as ImageIcon,
 } from "lucide-react";
 
 // -----------------------------------------------------------------------------
@@ -572,11 +574,14 @@ export default function App() {
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [renameValue, setRenameValue] = useState("");
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+  const [isOcrLoading, setIsOcrLoading] = useState(false);
 
   const [user, setUser] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const htmlInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const imageInputRef = useRef(null);
   const turndownRef = useRef(
     (() => {
       const service = new TurndownService({
@@ -1435,6 +1440,62 @@ ${formContent.substring(0, 2000)}`;
     }
   };
 
+  const handleProcessOcr = async (file) => {
+    if (!file || isOcrLoading) return;
+    
+    if (!genAI) {
+      showNotification("AI 설정을 위해 .env 파일에 API 키를 입력해주세요.");
+      return;
+    }
+
+    setIsOcrLoading(true);
+    showNotification("이미지에서 텍스트를 추출하는 중...");
+
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      // Convert file to base64
+      const reader = new FileReader();
+      const base64Promise = new Promise((resolve) => {
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(file);
+      });
+      const base64Data = await base64Promise;
+
+      const prompt = "Please extract all text from this image and return it accurately. Do not include any explanations or metadata, just the extracted text.";
+
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64Data,
+            mimeType: file.type
+          }
+        }
+      ]);
+
+      const response = await result.response;
+      const text = response.text().trim();
+
+      if (text) {
+        setFormContent(prev => (prev ? prev + "\n" + text : text));
+        showNotification("텍스트가 성공적으로 추출되었습니다.");
+        
+        // If title is empty, try to generate title too
+        if (!formTitle.trim()) {
+           handleAutoGenerateTitle(false);
+        }
+      } else {
+        showNotification("이미지에서 텍스트를 찾을 수 없습니다.");
+      }
+    } catch (error) {
+      console.error("OCR failed:", error);
+      showNotification("텍스트 추출 중 오류가 발생했습니다.");
+    } finally {
+      setIsOcrLoading(false);
+    }
+  };
+
   const handleFileImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1985,23 +2046,77 @@ ${formContent.substring(0, 2000)}`;
               </div>
               <div className="flex flex-col h-64">
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-xs font-bold text-slate-500">
-                    내용 (Markdown & Code)
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="block text-xs font-bold text-slate-500">
+                      내용 (Markdown & Code)
+                    </label>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="카메라로 텍스트 스캔"
+                        disabled={isOcrLoading}
+                      >
+                        <Camera size={14} />
+                      </button>
+                      <button
+                        onClick={() => imageInputRef.current?.click()}
+                        className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="이미지에서 텍스트 추출"
+                        disabled={isOcrLoading}
+                      >
+                        <ImageIcon size={14} />
+                      </button>
+                      <input 
+                        type="file" 
+                        ref={cameraInputRef} 
+                        className="hidden" 
+                        accept="image/*" 
+                        capture="environment"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) handleProcessOcr(file);
+                          e.target.value = '';
+                        }}
+                      />
+                      <input 
+                        type="file" 
+                        ref={imageInputRef} 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) handleProcessOcr(file);
+                          e.target.value = '';
+                        }}
+                      />
+                    </div>
+                  </div>
                   <span className="text-[10px] text-blue-500 bg-blue-50 px-2 py-0.5 rounded">
                     Tip: 코드 복붙 시 ``` 로 감싸세요
                   </span>
                 </div>
-                <textarea
-                  className="w-full flex-1 p-3 border border-slate-300 rounded-lg outline-none focus:border-blue-500 resize-none font-sans leading-relaxed"
-                  placeholder={`내용 입력...\n\n\`\`\`javascript\nconsole.log("Hello");\n\`\`\``}
-                  value={formContent}
-                  onChange={(e) => setFormContent(e.target.value)}
-                  onPaste={handlePaste}
-                  onBlur={() => !formTitle.trim() && handleAutoGenerateTitle(false)}
-                />
+                <div className="relative flex-1">
+                  <textarea
+                    className={`w-full h-full p-3 border border-slate-300 rounded-lg outline-none focus:border-blue-500 resize-none font-sans leading-relaxed ${isOcrLoading ? 'opacity-50 pointer-events-none' : ''}`}
+                    placeholder={`내용 입력...\n\n\`\`\`javascript\nconsole.log("Hello");\n\`\`\``}
+                    value={formContent}
+                    onChange={(e) => setFormContent(e.target.value)}
+                    onPaste={handlePaste}
+                    onBlur={() =>
+                      !formTitle.trim() && handleAutoGenerateTitle(false)
+                    }
+                  />
+                  {isOcrLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[1px]">
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 size={24} className="animate-spin text-blue-600" />
+                        <span className="text-xs font-bold text-blue-600">추출 중...</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">
                   태그 (쉼표로 구분)
                 </label>
