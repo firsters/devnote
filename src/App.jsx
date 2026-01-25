@@ -68,6 +68,7 @@ const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : "
 const STORAGE_KEY_DATA = "devnote_data_v11";
 const STORAGE_KEY_CATS = "devnote_cats_v11";
 const STORAGE_KEY_VIEW_MODE = "devnote_view_mode_v11";
+const STORAGE_KEY_LAST_VERSION = "devnote_last_version";
 const APP_TITLE = "DevNote";
 
 // Google Gemini AI Setup
@@ -907,6 +908,17 @@ export default function App() {
     }
   }, [needRefresh]);
 
+  // Check for app version update
+  useEffect(() => {
+    const lastVersion = localStorage.getItem(STORAGE_KEY_LAST_VERSION);
+    if (lastVersion && lastVersion !== APP_VERSION) {
+      // Show for a bit longer if it's a version update
+      setNotification(`🚀 최신 버전으로 업데이트되었습니다!\n${APP_VERSION}`);
+      setTimeout(() => setNotification(null), 5000);
+    }
+    localStorage.setItem(STORAGE_KEY_LAST_VERSION, APP_VERSION);
+  }, []);
+
   // Handles redirect result on page load
   useEffect(() => {
     if (!auth) return;
@@ -1609,8 +1621,8 @@ ${formContent.substring(0, 2000)}`;
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900 safe-area-inset-top">
       {notification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[110] px-5 py-3 rounded-full shadow-2xl text-white text-sm font-bold bg-slate-800/90 backdrop-blur border border-slate-700 flex items-center gap-3 animate-fade-in-down">
-          <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[110] px-6 py-3 rounded-2xl shadow-2xl text-white text-sm font-bold bg-slate-800/90 backdrop-blur border border-slate-700 flex items-center gap-4 animate-fade-in-down whitespace-pre-line text-center min-w-[280px] justify-center">
+          <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
           {notification}
         </div>
       )}
