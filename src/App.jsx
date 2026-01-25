@@ -580,6 +580,7 @@ export default function App() {
   const cameraInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const hasFetchedRef = useRef(false);
+  const notificationTimeoutRef = useRef(null);
   const turndownRef = useRef(
     (() => {
       const service = new TurndownService({
@@ -1223,9 +1224,20 @@ export default function App() {
 
   const showNotification = (text, options = {}) => {
     const { sticky = false, duration = 3000 } = options;
+    
+    // Clear any existing timeout to prevent overlapping notifications from clearing each other
+    if (notificationTimeoutRef.current) {
+      clearTimeout(notificationTimeoutRef.current);
+      notificationTimeoutRef.current = null;
+    }
+
     setNotification({ text, sticky });
+
     if (!sticky) {
-      setTimeout(() => setNotification(null), duration);
+      notificationTimeoutRef.current = setTimeout(() => {
+        setNotification(null);
+        notificationTimeoutRef.current = null;
+      }, duration);
     }
   };
 
