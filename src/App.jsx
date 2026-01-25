@@ -9,6 +9,7 @@ import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
 import * as mammoth from "mammoth";
 import * as pdfjs from "pdfjs-dist";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // PDF.js worker setup
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -53,6 +54,8 @@ import {
   Info,
   FolderPlus,
   FilePlus,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 
 // -----------------------------------------------------------------------------
@@ -63,6 +66,12 @@ const STORAGE_KEY_DATA = "devnote_data_v11";
 const STORAGE_KEY_CATS = "devnote_cats_v11";
 const STORAGE_KEY_VIEW_MODE = "devnote_view_mode_v11";
 const APP_TITLE = "DevNote";
+
+// Google Gemini AI Setup
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const genAI = GEMINI_API_KEY && GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY_HERE" 
+  ? new GoogleGenerativeAI(GEMINI_API_KEY) 
+  : null;
 
 // -----------------------------------------------------------------------------
 // 1. 초기 데이터
@@ -562,6 +571,7 @@ export default function App() {
   // Category Rename States
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [renameValue, setRenameValue] = useState("");
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
 
   const [user, setUser] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -1390,6 +1400,41 @@ export default function App() {
     showNotification("HTML 파일이 다운로드되었습니다.");
   };
 
+  const handleAutoGenerateTitle = async (force = false) => {
+    if (isGeneratingTitle) return;
+    if (!formContent.trim()) return;
+    if (!force && formTitle.trim()) return; // Don't overwrite if manual and title already exists, unless forced
+
+    if (!genAI) {
+      console.warn("Gemini API key is missing. Auto-titling disabled.");
+      if (force) showNotification("AI 설정을 위해 .env 파일에 API 키를 입력해주세요.");
+      return;
+    }
+
+    setIsGeneratingTitle(true);
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const prompt = `Analyze the following developer note content and provide a very concise, descriptive title (under 30 characters). Return ONLY the plain text title without any symbols or formatting.
+      
+Content:
+${formContent.substring(0, 2000)}`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text().trim();
+      
+      if (text) {
+        setFormTitle(text);
+        showNotification("AI가 제목을 생성했습니다.");
+      }
+    } catch (error) {
+      console.error("AI Title Generation failed:", error);
+      if (force) showNotification("제목 생성 중 오류가 발생했습니다.");
+    } finally {
+      setIsGeneratingTitle(false);
+    }
+  };
+
   const handleFileImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1892,12 +1937,30 @@ export default function App() {
               </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
-              <input
-                className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:border-blue-500 text-lg font-bold"
-                placeholder="제목"
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  className="w-full p-3 pr-10 border border-slate-300 rounded-lg outline-none focus:border-blue-500 text-lg font-bold"
+                  placeholder="제목"
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                />
+                <button
+                  onClick={() => handleAutoGenerateTitle(true)}
+                  disabled={isGeneratingTitle || !formContent.trim()}
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all
+                    ${isGeneratingTitle 
+                      ? 'bg-slate-100 text-slate-400' 
+                      : (formContent.trim() ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'text-slate-300')}
+                  `}
+                  title="AI 제목 자동 생성"
+                >
+                  {isGeneratingTitle ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={16} />
+                  )}
+                </button>
+              </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">
                   카테고리
@@ -1935,6 +1998,7 @@ export default function App() {
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
                   onPaste={handlePaste}
+                  onBlur={() => !formTitle.trim() && handleAutoGenerateTitle(false)}
                 />
               </div>
               <div>
