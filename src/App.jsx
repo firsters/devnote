@@ -940,9 +940,8 @@ export default function App() {
   useEffect(() => {
     const lastVersion = localStorage.getItem(STORAGE_KEY_LAST_VERSION);
     if (lastVersion && lastVersion !== APP_VERSION) {
-      // Show for a bit longer if it's a version update
-      setNotification(`🚀 최신 버전으로 업데이트되었습니다!\n${APP_VERSION}`);
-      setTimeout(() => setNotification(null), 5000);
+      // Show sticky notification for version update
+      showNotification(`🚀 최신 버전으로 업데이트되었습니다!\n${APP_VERSION}`, { sticky: true });
     }
     localStorage.setItem(STORAGE_KEY_LAST_VERSION, APP_VERSION);
   }, []);
@@ -1222,9 +1221,12 @@ export default function App() {
     return Array.from(tags).sort();
   }, [snippets]);
 
-  const showNotification = (message) => {
-    setNotification(message);
-    setTimeout(() => setNotification(null), 3000);
+  const showNotification = (text, options = {}) => {
+    const { sticky = false, duration = 3000 } = options;
+    setNotification({ text, sticky });
+    if (!sticky) {
+      setTimeout(() => setNotification(null), duration);
+    }
   };
 
   const handleSaveSnippet = () => {
@@ -1532,11 +1534,11 @@ ${formContent.substring(0, 2000)}`;
            setTimeout(() => handleAutoGenerateTitle(false), 500);
         }
       } else {
-        showNotification("이미지에서 텍스트를 인식하지 못했습니다.");
+        showNotification("이미지에서 텍스트를 인식하지 못했습니다.", { sticky: true });
       }
     } catch (error) {
       console.error("OCR failed:", error);
-      showNotification(`추출 실패: ${error.message || "알 수 없는 오류"}`);
+      showNotification(`추출 실패: ${error.message || "알 수 없는 오류"}`, { sticky: true });
     } finally {
       setIsOcrLoading(false);
     }
@@ -1660,9 +1662,19 @@ ${formContent.substring(0, 2000)}`;
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900 safe-area-inset-top">
       {notification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[110] px-6 py-3 rounded-2xl shadow-2xl text-white text-sm font-bold bg-slate-800/90 backdrop-blur border border-slate-700 flex items-center gap-4 animate-fade-in-down whitespace-pre-line text-center min-w-[280px] justify-center">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[110] px-6 py-3 rounded-2xl shadow-2xl text-white text-sm font-bold bg-slate-800/90 backdrop-blur border border-slate-700 flex items-center gap-4 animate-fade-in-down whitespace-pre-line text-center min-w-[280px] justify-center max-w-[90vw]">
           <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
-          {notification}
+          <div className="flex-1">
+            {typeof notification === "object" ? notification.text : notification}
+          </div>
+          {notification.sticky && (
+            <button
+              onClick={() => setNotification(null)}
+              className="ml-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs transition-colors shadow-lg border border-blue-400/30 whitespace-nowrap"
+            >
+              확인
+            </button>
+          )}
         </div>
       )}
 
