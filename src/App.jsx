@@ -488,12 +488,31 @@ export default function App() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r) {
+      if (r) {
+        // Poll for updates every 5 minutes
+        setInterval(() => {
+          r.update();
+        }, 5 * 60 * 1000);
+      }
       console.log('SW Registered');
     },
     onRegisterError(error) {
       console.error('SW registration error', error);
     },
   });
+
+  // Proactive SW update check on window focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.update();
+        });
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   const [snippets, setSnippets] = useState(() => {
     try {
