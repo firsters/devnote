@@ -63,7 +63,7 @@ import {
 // -----------------------------------------------------------------------------
 // 앱 버전 및 설정
 // -----------------------------------------------------------------------------
-const APP_VERSION = "v1.1.20260125002000 GMT+9";
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : "v1.1.dev-local";
 const STORAGE_KEY_DATA = "devnote_data_v11";
 const STORAGE_KEY_CATS = "devnote_cats_v11";
 const STORAGE_KEY_VIEW_MODE = "devnote_view_mode_v11";
