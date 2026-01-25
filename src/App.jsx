@@ -593,15 +593,23 @@ export default function App() {
       });
 
       service.addRule("confluence-code-macro", {
-        filter: (node) =>
-          (node.nodeName === "DIV" &&
+        filter: (node) => {
+          const isConfluenceDiv = (node.nodeName === "DIV" &&
             (node.getAttribute("data-macro-name") === "code" ||
               node.classList.contains("code-content") ||
-              node.classList.contains("code-block"))) ||
-          (node.nodeName === "PRE" &&
+              node.classList.contains("code-block")));
+          
+          const isConfluencePre = (node.nodeName === "PRE" &&
             (node.classList.contains("syntaxhighlighter-pre") ||
               node.classList.contains("syntaxhighlighter") ||
-              node.classList.contains("code"))),
+              node.classList.contains("code")));
+
+          // CRITICAL: Gemini uses 'code-block' or 'code' classes on DIVs.
+          // We must check for Confluence-specific attributes or exclude Gemini's wrappers.
+          const isGeminiWrapper = node.querySelector('.m-code, .code-block-header, button');
+          
+          return (isConfluenceDiv || isConfluencePre) && !isGeminiWrapper;
+        },
         replacement: (content, node) => {
           // Robust recursive text extraction to preserve line breaks
           const extractText = (el) => {
@@ -744,7 +752,8 @@ export default function App() {
           node.nodeName === "LI" && node.classList.contains("task-list-item"),
         replacement: (content, node) => {
           const checked = node.querySelector('input[type="checkbox"]')?.checked;
-          return `- [${checked ? "x" : " "}] ${content}\n`;
+          // Use 'content' (processed markdown) instead of raw textContent to preserve inline styles
+          return `- [${checked ? "x" : " "}] ${content.trim()}\n`;
         },
       });
 
@@ -753,8 +762,8 @@ export default function App() {
         replacement: (content, node) => {
           const hLevel = Number(node.nodeName.charAt(1));
           const prefix = "#".repeat(hLevel);
-          const cleanContent = node.textContent.trim();
-          return `\n\n${prefix} ${cleanContent}\n\n`;
+          // Use 'content' (processed markdown) to preserve inner styles like bold/code
+          return `\n\n${prefix} ${content.trim()}\n\n`;
         },
       });
 
@@ -771,7 +780,7 @@ export default function App() {
 
       // 6. Remove junk tags
       service.addRule("remove-junk", {
-        filter: ["style", "script", "noscript", "meta"],
+        filter: ["style", "script", "noscript", "meta", "button", "svg", "path"],
         replacement: () => "",
       });
 
