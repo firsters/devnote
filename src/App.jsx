@@ -1671,6 +1671,35 @@ ${formContent.substring(0, 2000)}`;
     }
   };
 
+  const handleShareLink = async () => {
+    const shareData = {
+      title: "DevNote - 모바일 노트를 위한 가장 빠른 도구",
+      text: "DevNote를 설치하고 편리하게 개발 노트를 작성해보세요!",
+      url: window.location.origin
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        showNotification("성공적으로 공유했습니다.");
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Link share failed:", error);
+          showNotification("공속 실패: " + error.message);
+        }
+      }
+    } else {
+      // Fallback: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(window.location.origin);
+        showNotification("설치 링크가 클립보드에 복사되었습니다.\n이제 원하는 곳에 붙여넣으세요!");
+      } catch (err) {
+        console.error("Clipboard fallback failed:", err);
+        showNotification("링크 복사에 실패했습니다.");
+      }
+    }
+  };
+
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900 safe-area-inset-top">
       {notification && (
@@ -1839,6 +1868,12 @@ ${formContent.substring(0, 2000)}`;
             >
               <FileCode size={16} className="text-blue-600" /> Confluence
               내보내기
+            </button>
+            <button
+              onClick={handleShareLink}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-left"
+            >
+              <Share size={16} className="text-indigo-600" /> 설치링크 보내기
             </button>
             <button
               onClick={() => htmlInputRef.current?.click()}
