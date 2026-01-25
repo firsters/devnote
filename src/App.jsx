@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -517,6 +518,19 @@ const CategoryNode = ({
 export default function App() {
   usePWAInjection();
 
+  const {
+    offlineReady: [offlineReady, setOfflineReady],
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      console.log('SW Registered');
+    },
+    onRegisterError(error) {
+      console.error('SW registration error', error);
+    },
+  });
+
   const [snippets, setSnippets] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_DATA);
@@ -911,6 +925,24 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_VIEW_MODE, viewMode);
   }, [viewMode]);
+
+  useEffect(() => {
+    if (offlineReady) {
+      showNotification("오프라인 모드 준비 완료!");
+      setOfflineReady(false);
+    }
+  }, [offlineReady]);
+
+  useEffect(() => {
+    if (needRefresh) {
+      showNotification("새로운 버전이 발견되었습니다. 자동 업데이트 중...");
+      // In autoUpdate mode, it will reload automatically.
+      // If it doesn't reload immediately, the user will at least see this message.
+      setTimeout(() => {
+        setNeedRefresh(false);
+      }, 5000);
+    }
+  }, [needRefresh]);
 
   // Handles redirect result on page load
   useEffect(() => {
