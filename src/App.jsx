@@ -219,19 +219,33 @@ const MarkdownView = ({ content, code }) => {
         .devnote-markdown th { background-color: #f4f5f7; font-weight: bold; }
         .devnote-markdown tr:nth-child(even) { background-color: #f9f9fb; }
         .devnote-markdown blockquote[data-label] { margin: 1em 0; border-left: 4px solid #4c9aff; padding-left: 1em; color: #172b4d; }
+        .devnote-markdown .inline-code {
+          background-color: #f0f2f5;
+          color: #e03131;
+          padding: 0.2em 0.4em;
+          border-radius: 4px;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+          font-size: 0.9em;
+          font-weight: 500;
+        }
       `}</style>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={{
-          code({ node, inline, className, children, ...props }) {
+          code({ node, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || "");
             const codeContent = String(children).replace(/\n$/, "");
-            if (!inline) {
+            
+            // react-markdown v9+ compatibility: inline prop is gone.
+            // Distinguish by: 1) Has language- class, 2) has internal newlines, or 3) is child of PRE
+            const isBlock = match || codeContent.includes("\n") || (node?.tagName === "code" && node?.parent?.tagName === "pre");
+
+            if (isBlock) {
               return <CodeBlock code={codeContent} />;
             }
             return (
-              <code className={`${className} mx-0.5`} {...props}>
+              <code className={`${className || ""} inline-code`} {...props}>
                 {children}
               </code>
             );
