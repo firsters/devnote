@@ -560,6 +560,7 @@ export default function App() {
   const htmlInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const imageInputRef = useRef(null);
+  const hasFetchedRef = useRef(false);
   const turndownRef = useRef(
     (() => {
       const service = new TurndownService({
@@ -1047,7 +1048,7 @@ export default function App() {
   // Initial Fetch from Firestore
   useEffect(() => {
     const fetchFromCloud = async () => {
-      if (user && db) {
+      if (user && db && !hasFetchedRef.current) {
         try {
           const docSnap = await getDoc(doc(db, "users", user.uid));
           if (docSnap.exists()) {
@@ -1055,10 +1056,13 @@ export default function App() {
             if (cloudData.snippets) setSnippets(cloudData.snippets);
             if (cloudData.categories) setCategories(cloudData.categories);
             showNotification("클라우드 데이터를 불러왔습니다.");
+            hasFetchedRef.current = true;
           }
         } catch (error) {
           console.error("Failed to fetch cloud data:", error);
         }
+      } else if (!user) {
+        hasFetchedRef.current = false; // Reset if user logs out
       }
     };
     fetchFromCloud();
