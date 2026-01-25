@@ -938,7 +938,7 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("share") === "true") {
-      const title = params.get("title") || "";
+      const sharedTitle = params.get("title") || "";
       const text = params.get("text") || "";
       const url = params.get("url") || "";
 
@@ -947,22 +947,48 @@ export default function App() {
         content = (content ? content + "\n\n" : "") + url;
       }
 
-      if (title || content) {
-        setFormTitle(title);
-        setFormContent(content);
-        setFormCategoryId(
-          selectedCategoryId === "all" ? categories[1].id : selectedCategoryId,
-        );
-        setIsWriteModalOpen(true);
+      if (sharedTitle || content) {
+        // 1. Find or create "임시" category at root level
+        let tempCat = categories.find(c => c.name === "임시" && c.parentId === null);
+        let finalCategories = categories;
+        
+        if (!tempCat) {
+          tempCat = { id: "cat_temp_" + Date.now(), name: "임시", parentId: null };
+          finalCategories = [...categories, tempCat];
+          setCategories(finalCategories);
+        }
+
+        // 2. Auto-generate title if shared title is empty
+        let finalTitle = sharedTitle;
+        if (!finalTitle && content) {
+          const firstLine = content.split('\n')[0].trim();
+          finalTitle = firstLine.length > 30 ? firstLine.substring(0, 30) + "..." : firstLine;
+          if (!finalTitle) finalTitle = "공유된 노트 " + new Date().toLocaleString();
+        }
+
+        // 3. Create and save snippet automatically
+        const newSnippet = {
+          id: Date.now().toString(),
+          title: finalTitle,
+          content: content,
+          category: tempCat.name,
+          createdAt: new Date().toISOString(),
+          tags: ["shared"],
+          code: "",
+        };
+
+        setSnippets(prev => [newSnippet, ...prev]);
+        setSelectedCategoryId(tempCat.id);
+        setSelectedTag(null);
 
         // Clean URL to prevent multiple triggers on reload
         const newUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, document.title, newUrl);
 
-        showNotification("공유된 내용을 가져왔습니다.");
+        showNotification(`"임시" 폴더에 새로운 노트가 저장되었습니다.`);
       }
     }
-  }, [categories, selectedCategoryId]);
+  }, [categories, selectedCategoryId]); // categories updated within the hook is fine as long as we only act on 'share=true'
 
   // Sync with Firestore (Push local data to cloud when logged in)
   useEffect(() => {
