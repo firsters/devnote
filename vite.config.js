@@ -32,16 +32,23 @@ export default defineConfig({
         short_name: 'DevNote',
         description: 'Developer Snippet & Note Management',
         theme_color: '#3b82f6',
+        background_color: '#ffffff',
+        display: 'standalone',
+        orientation: 'portrait-primary',
+        scope: '/',
+        start_url: '/',
         icons: [
           {
             src: 'logo.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: 'logo.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ],
         share_target: {

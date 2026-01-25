@@ -147,43 +147,6 @@ const usePWAInjection = () => {
       el.content = tag.content;
     });
 
-    // 3. 동적 매니페스트 (Manifest) 생성
-    const manifest = {
-      name: APP_TITLE,
-      short_name: APP_TITLE,
-      start_url: ".",
-      display: "standalone",
-      background_color: "#ffffff",
-      theme_color: "#2563eb",
-      orientation: "portrait-primary",
-      icons: [
-        {
-          src: "/logo.png",
-          sizes: "512x512",
-          type: "image/png",
-          purpose: "any maskable",
-        },
-        {
-          src: "/logo.png",
-          sizes: "192x192",
-          type: "image/png",
-        },
-      ],
-    };
-
-    const stringManifest = JSON.stringify(manifest);
-    const blob = new Blob([stringManifest], { type: "application/json" });
-    const manifestURL = URL.createObjectURL(blob);
-
-    let link = document.querySelector("#dynamic-manifest");
-    if (!link) {
-      link = document.createElement("link");
-      link.id = "dynamic-manifest";
-      link.rel = "manifest";
-      document.head.appendChild(link);
-    }
-    link.href = manifestURL;
-
     // 4. 아이콘 링크 주입 (iOS용)
     let iconLink = document.querySelector('link[rel="apple-touch-icon"]');
     if (!iconLink) {
