@@ -26,6 +26,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         maximumFileSizeToCacheInBytes: 5242880, // 5MiB
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
       },
       manifest: {
         name: 'DevNote',

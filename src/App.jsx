@@ -919,14 +919,22 @@ export default function App() {
 
   useEffect(() => {
     if (needRefresh) {
-      showNotification("새로운 버전이 발견되었습니다. 자동 업데이트 중...");
-      // In autoUpdate mode, it will reload automatically.
-      // If it doesn't reload immediately, the user will at least see this message.
+      showNotification("새로운 버전이 발견되었습니다. 업데이트를 반영합니다...");
+      // Forcing update and reload
       setTimeout(() => {
-        setNeedRefresh(false);
-      }, 5000);
+        updateServiceWorker(true);
+      }, 1500);
     }
   }, [needRefresh]);
+
+  // Initial SW update check on mount
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.update().catch(err => console.error("SW manual update failed:", err));
+      });
+    }
+  }, []);
 
   // Check for app version update
   useEffect(() => {
