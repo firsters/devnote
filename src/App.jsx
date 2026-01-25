@@ -698,7 +698,7 @@ export default function App() {
           // ONLY use block (triple backticks) if there's a real vertical break (newline)
           const hasNewLine = cleanCode.includes("\n");
           if (!hasNewLine && cleanCode.length < 200) {
-            return ` \`${cleanCode}\` `;
+            return `\`${cleanCode}\``;
           }
 
           return `\n\n\`\`\`\n${cleanCode}\n\`\`\`\n\n`;
@@ -727,7 +727,7 @@ export default function App() {
         replacement: (content) => {
           const cleanContent = content.trim();
           if (!cleanContent) return "";
-          return ` \`${cleanContent.replace(/`/g, "\\`")}\` `;
+          return `\`${cleanContent.replace(/`/g, "\\`")}\``;
         },
       });
 
@@ -786,10 +786,25 @@ export default function App() {
         filter: (node) =>
           (node.nodeName === "DIV" &&
             (node.classList.contains("content-wrapper") ||
-              node.classList.contains("innerCell"))) ||
+              node.classList.contains("innerCell") ||
+              node.classList.contains("code-block-header") ||
+              node.classList.contains("m-code") ||
+              node.classList.contains("highlight") ||
+              node.style.display === "inline" ||
+              node.style.display === "contents")) ||
           (node.nodeName === "SPAN" &&
-            node.classList.contains("confluence-anchor-link")),
+            (node.classList.contains("confluence-anchor-link") ||
+              node.style.display === "block" === false)),
         replacement: (content) => content,
+      });
+
+      // 7. Flatten paragraphs/divs that only contain inline elements or single line
+      service.addRule("inline-wrappers", {
+        filter: (node) => 
+          (node.nodeName === "P" || node.nodeName === "DIV") && 
+          node.childNodes.length === 1 && 
+          ["CODE", "SPAN", "B", "I", "STRONG", "EM", "A"].includes(node.childNodes[0].nodeName),
+        replacement: (content) => content
       });
 
       // 6. Remove junk tags
