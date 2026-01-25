@@ -13,19 +13,14 @@ import * as pdfjs from "pdfjs-dist";
 // PDF.js worker setup
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
-import { 
-  signInWithPopup, 
+import {
+  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
-  onAuthStateChanged, 
-  signOut 
+  onAuthStateChanged,
+  signOut,
 } from "firebase/auth";
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  onSnapshot 
-} from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { auth, db, googleProvider } from "./firebase";
 import {
   Search,
@@ -56,6 +51,8 @@ import {
   Share,
   Layout,
   Info,
+  FolderPlus,
+  FilePlus,
 } from "lucide-react";
 
 // -----------------------------------------------------------------------------
@@ -247,7 +244,7 @@ const MarkdownView = ({ content, code }) => {
         .devnote-markdown tr:nth-child(even) { background-color: #f9f9fb; }
         .devnote-markdown blockquote[data-label] { margin: 1em 0; border-left: 4px solid #4c9aff; padding-left: 1em; color: #172b4d; }
       `}</style>
-      <ReactMarkdown 
+      <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={{
@@ -297,28 +294,37 @@ const TagChip = ({ tag, onClick, active }) => (
   </button>
 );
 
-const ConfirmDialog = ({ open, title, message, onConfirm, onCancel, type = "danger" }) => {
+const ConfirmDialog = ({
+  open,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  type = "danger",
+}) => {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden animate-zoom-in">
         <div className="p-6 text-center">
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${type === 'danger' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
-            {type === 'danger' ? <Trash2 size={24} /> : <Info size={24} />}
+          <div
+            className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${type === "danger" ? "bg-red-100 text-red-600" : "bg-blue-100 text-blue-600"}`}
+          >
+            {type === "danger" ? <Trash2 size={24} /> : <Info size={24} />}
           </div>
           <h3 className="font-bold text-lg text-slate-800 mb-2">{title}</h3>
           <p className="text-slate-600 text-sm leading-relaxed">{message}</p>
         </div>
         <div className="flex border-t border-slate-100">
-          <button 
+          <button
             onClick={onCancel}
             className="flex-1 px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50 border-r border-slate-100 transition-colors"
           >
             취소
           </button>
-          <button 
+          <button
             onClick={onConfirm}
-            className={`flex-1 px-4 py-3 text-sm font-bold transition-colors ${type === 'danger' ? 'text-red-600 hover:bg-red-50' : 'text-blue-600 hover:bg-blue-50'}`}
+            className={`flex-1 px-4 py-3 text-sm font-bold transition-colors ${type === "danger" ? "text-red-600 hover:bg-red-50" : "text-blue-600 hover:bg-blue-50"}`}
           >
             확인
           </button>
@@ -343,6 +349,8 @@ const CategoryNode = ({
   renameValue,
   onRenameValueChange,
   noteCount,
+  onAddSubCategory,
+  onAddNote,
 }) => {
   const hasChildren = category.children && category.children.length > 0;
   const isExpanded = expandedIds.has(category.id);
@@ -352,9 +360,11 @@ const CategoryNode = ({
   const getIcon = () => {
     if (category.id === "all") return <Folder size={16} />;
     return (
-      <Folder 
-        size={16} 
-        className={isSelected || isExpanded ? "text-blue-500" : "text-slate-400"} 
+      <Folder
+        size={16}
+        className={
+          isSelected || isExpanded ? "text-blue-500" : "text-slate-400"
+        }
       />
     );
   };
@@ -379,27 +389,30 @@ const CategoryNode = ({
           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </div>
         <span className="flex-shrink-0 opacity-70">{getIcon()}</span>
-        
+
         {isEditing ? (
-          <div className="flex-1 flex gap-1 pr-1" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex-1 flex gap-1 pr-1"
+            onClick={(e) => e.stopPropagation()}
+          >
             <input
               className="flex-1 border border-blue-400 p-0.5 rounded text-xs outline-none bg-white font-normal"
               value={renameValue}
               onChange={(e) => onRenameValueChange(e.target.value)}
               autoFocus
               onKeyDown={(e) => {
-                if (e.key === 'Enter') onEditSave(category.id);
-                if (e.key === 'Escape') onEditCancel();
+                if (e.key === "Enter") onEditSave(category.id);
+                if (e.key === "Escape") onEditCancel();
               }}
             />
             <div className="flex gap-0.5">
-               <button 
+              <button
                 onClick={() => onEditSave(category.id)}
                 className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 <Check size={10} />
               </button>
-              <button 
+              <button
                 onClick={() => onEditCancel()}
                 className="p-1 bg-slate-200 text-slate-600 rounded hover:bg-slate-300"
               >
@@ -419,9 +432,30 @@ const CategoryNode = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  onAddNote(category.id);
+                }}
+                className="text-slate-400 hover:text-green-600 p-1"
+                title="새 노트 작성"
+              >
+                <FilePlus size={12} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddSubCategory(category.id);
+                }}
+                className="text-slate-400 hover:text-blue-600 p-1"
+                title="하위 폴더 추가"
+              >
+                <FolderPlus size={12} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
                   onEditStart(category.id, category.name);
                 }}
                 className="text-slate-400 hover:text-blue-600 p-1"
+                title="폴더 이름 변경"
               >
                 <Edit2 size={12} />
               </button>
@@ -431,6 +465,7 @@ const CategoryNode = ({
                   onDelete(category.id);
                 }}
                 className="text-slate-400 hover:text-red-500 p-1"
+                title="폴더 삭제"
               >
                 <Trash2 size={12} />
               </button>
@@ -457,6 +492,8 @@ const CategoryNode = ({
             renameValue={renameValue}
             onRenameValueChange={onRenameValueChange}
             noteCount={child.totalCount}
+            onAddSubCategory={onAddSubCategory}
+            onAddNote={onAddNote}
           />
         ))}
     </>
@@ -514,8 +551,14 @@ export default function App() {
     return localStorage.getItem(STORAGE_KEY_VIEW_MODE) || "compact";
   });
   const [expandedSnippetIds, setExpandedSnippetIds] = useState(new Set());
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: "", message: "", onConfirm: null, type: "danger" });
-  
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    type: "danger",
+  });
+
   // Category Rename States
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [renameValue, setRenameValue] = useState("");
@@ -524,193 +567,245 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   const htmlInputRef = useRef(null);
-  const turndownRef = useRef((() => {
-    const service = new TurndownService({
-      headingStyle: "atx",
-      codeBlockStyle: "fenced",
-      hr: "---",
-      bulletListMarker: "-",
-      preformattedCode: false, // Prevent <pre> without code tags from becoming code blocks automatically
-    });
-    // CRITICAL: Disable indentation-based code blocks to prevent random text from becoming code
-    service.remove("indentedCodeBlock");
-    service.use(gfm);
+  const turndownRef = useRef(
+    (() => {
+      const service = new TurndownService({
+        headingStyle: "atx",
+        codeBlockStyle: "fenced",
+        hr: "---",
+        bulletListMarker: "-",
+        preformattedCode: false, // Prevent <pre> without code tags from becoming code blocks automatically
+      });
+      // CRITICAL: Disable indentation-based code blocks to prevent random text from becoming code
+      service.remove("indentedCodeBlock");
+      service.use(gfm);
 
-    // 1. Remove line numbers from Confluence code blocks
-    service.addRule("confluence-line-numbers", {
-      filter: (node) => 
-        (node.nodeName === "TD" && (node.classList.contains("line-number") || node.classList.contains("rd-line-number"))) ||
-        (node.nodeName === "DIV" && (node.classList.contains("line-numbers") || node.classList.contains("gutter"))),
-      replacement: () => "",
-    });
+      // 1. Remove line numbers from Confluence code blocks
+      service.addRule("confluence-line-numbers", {
+        filter: (node) =>
+          (node.nodeName === "TD" &&
+            (node.classList.contains("line-number") ||
+              node.classList.contains("rd-line-number"))) ||
+          (node.nodeName === "DIV" &&
+            (node.classList.contains("line-numbers") ||
+              node.classList.contains("gutter"))),
+        replacement: () => "",
+      });
 
-    service.addRule("confluence-code-macro", {
-      filter: (node) => 
-        (node.nodeName === "DIV" && (node.getAttribute("data-macro-name") === "code" || node.classList.contains("code-content") || node.classList.contains("code-block"))) ||
-        (node.nodeName === "PRE" && (node.classList.contains("syntaxhighlighter-pre") || node.classList.contains("syntaxhighlighter") || node.classList.contains("code"))),
-      replacement: (content, node) => {
-        // Robust recursive text extraction to preserve line breaks
-        const extractText = (el) => {
-          let text = "";
-          for (let i = 0; i < el.childNodes.length; i++) {
-            const child = el.childNodes[i];
-            
-            // Skip line numbers inside code macro (Confluence specific)
-            if (child.nodeType === 1) {
-              const className = child.className || "";
-              const isLineNum = (child.nodeName === "TD" && (className.includes("line-number") || className.includes("rd-line-number"))) ||
-                                (child.nodeName === "DIV" && (className.includes("line-numbers") || className.includes("gutter")));
-              if (isLineNum) continue;
-            }
+      service.addRule("confluence-code-macro", {
+        filter: (node) =>
+          (node.nodeName === "DIV" &&
+            (node.getAttribute("data-macro-name") === "code" ||
+              node.classList.contains("code-content") ||
+              node.classList.contains("code-block"))) ||
+          (node.nodeName === "PRE" &&
+            (node.classList.contains("syntaxhighlighter-pre") ||
+              node.classList.contains("syntaxhighlighter") ||
+              node.classList.contains("code"))),
+        replacement: (content, node) => {
+          // Robust recursive text extraction to preserve line breaks
+          const extractText = (el) => {
+            let text = "";
+            for (let i = 0; i < el.childNodes.length; i++) {
+              const child = el.childNodes[i];
 
-            if (child.nodeType === 3) { // Text node
-              text += child.textContent;
-            } else if (child.nodeType === 1) { // Element node
-              const tag = child.nodeName.toUpperCase();
-              
-              if (tag === "BR") {
-                text += "\n";
-                continue;
+              // Skip line numbers inside code macro (Confluence specific)
+              if (child.nodeType === 1) {
+                const className = child.className || "";
+                const isLineNum =
+                  (child.nodeName === "TD" &&
+                    (className.includes("line-number") ||
+                      className.includes("rd-line-number"))) ||
+                  (child.nodeName === "DIV" &&
+                    (className.includes("line-numbers") ||
+                      className.includes("gutter")));
+                if (isLineNum) continue;
               }
 
-              const isBlock = ["DIV", "P", "TR", "LI", "TD", "TH", "PRE", "H1", "H2", "H3"].includes(tag) || 
-                              child.classList.contains("line") || 
-                              child.classList.contains("code-line") ||
-                              child.classList.contains("syntaxhighlighter-line");
-              
-              const childContent = extractText(child);
-              
-              if (isBlock) {
-                // Only add prefix newline if there is already text and it doesn't end with a newline
-                if (text && !text.endsWith("\n")) text += "\n";
-                text += childContent;
-              } else {
-                text += childContent;
+              if (child.nodeType === 3) {
+                // Text node
+                text += child.textContent;
+              } else if (child.nodeType === 1) {
+                // Element node
+                const tag = child.nodeName.toUpperCase();
+
+                if (tag === "BR") {
+                  text += "\n";
+                  continue;
+                }
+
+                const isBlock =
+                  [
+                    "DIV",
+                    "P",
+                    "TR",
+                    "LI",
+                    "TD",
+                    "TH",
+                    "PRE",
+                    "H1",
+                    "H2",
+                    "H3",
+                  ].includes(tag) ||
+                  child.classList.contains("line") ||
+                  child.classList.contains("code-line") ||
+                  child.classList.contains("syntaxhighlighter-line");
+
+                const childContent = extractText(child);
+
+                if (isBlock) {
+                  // Only add prefix newline if there is already text and it doesn't end with a newline
+                  if (text && !text.endsWith("\n")) text += "\n";
+                  text += childContent;
+                } else {
+                  text += childContent;
+                }
               }
             }
+            return text;
+          };
+
+          const rawCode = extractText(node);
+          const cleanCode = rawCode
+            .replace(/\r/g, "")
+            .replace(/\\n/g, "\n")
+            .trim();
+          if (!cleanCode) return "";
+
+          // Final Smart Distinction:
+          // ONLY use block (triple backticks) if there's a real vertical break (newline)
+          const hasNewLine = cleanCode.includes("\n");
+          if (!hasNewLine && cleanCode.length < 200) {
+            return ` \`${cleanCode}\` `;
           }
-          return text;
-        };
 
-        const rawCode = extractText(node);
-        const cleanCode = rawCode.replace(/\r/g, "").replace(/\\n/g, "\n").trim();
-        if (!cleanCode) return "";
-        
-        // Final Smart Distinction: 
-        // ONLY use block (triple backticks) if there's a real vertical break (newline)
-        const hasNewLine = cleanCode.includes("\n");
-        if (!hasNewLine && cleanCode.length < 200) {
-          return ` \`${cleanCode}\` `;
-        }
-        
-        return `\n\n\`\`\`\n${cleanCode}\n\`\`\`\n\n`;
-      }
-    });
+          return `\n\n\`\`\`\n${cleanCode}\n\`\`\`\n\n`;
+        },
+      });
 
-    // 3. Improve inline code merging (Greedy search for mono fonts and backgrounds)
-    service.addRule("confluence-inline-code", {
-      filter: (node) => 
-        ["code", "tt", "kbd", "samp"].includes(node.nodeName.toLowerCase()) ||
-        (node.nodeName === "SPAN" && (
-          node.classList.contains("code") || 
-          node.classList.contains("monospace") ||
-          node.style.fontFamily?.toLowerCase().includes("mono") ||
-          node.style.backgroundColor === "rgb(244, 245, 247)" ||
-          node.style.backgroundColor === "rgb(241, 242, 244)" ||
-          node.style.backgroundColor === "rgb(238, 238, 238)" ||
-          node.style.backgroundColor === "#f4f5f7" ||
-          node.style.backgroundColor === "#eeeeee" ||
-          node.style.backgroundColor === "var(--ds-background-neutral-subtle, #F4F5F7)" ||
-          node.getAttribute("style")?.includes("background-color") && (
-            node.getAttribute("style").includes("#f4f5f7") || 
-            node.getAttribute("style").includes("#eeeeee") ||
-            node.getAttribute("style").includes("rgb(244, 245, 247)")
-          )
-        )),
-      replacement: (content) => {
-        const cleanContent = content.trim();
-        if (!cleanContent) return "";
-        return ` \`${cleanContent.replace(/`/g, "\\`")}\` `;
-      }
-    });
+      // 3. Improve inline code merging (Greedy search for mono fonts and backgrounds)
+      service.addRule("confluence-inline-code", {
+        filter: (node) =>
+          ["code", "tt", "kbd", "samp"].includes(node.nodeName.toLowerCase()) ||
+          (node.nodeName === "SPAN" &&
+            (node.classList.contains("code") ||
+              node.classList.contains("monospace") ||
+              node.style.fontFamily?.toLowerCase().includes("mono") ||
+              node.style.backgroundColor === "rgb(244, 245, 247)" ||
+              node.style.backgroundColor === "rgb(241, 242, 244)" ||
+              node.style.backgroundColor === "rgb(238, 238, 238)" ||
+              node.style.backgroundColor === "#f4f5f7" ||
+              node.style.backgroundColor === "#eeeeee" ||
+              node.style.backgroundColor ===
+                "var(--ds-background-neutral-subtle, #F4F5F7)" ||
+              (node.getAttribute("style")?.includes("background-color") &&
+                (node.getAttribute("style").includes("#f4f5f7") ||
+                  node.getAttribute("style").includes("#eeeeee") ||
+                  node.getAttribute("style").includes("rgb(244, 245, 247)"))))),
+        replacement: (content) => {
+          const cleanContent = content.trim();
+          if (!cleanContent) return "";
+          return ` \`${cleanContent.replace(/`/g, "\\`")}\` `;
+        },
+      });
 
-    // 5. Cleanup inside preserved table cells (Strip restrictive styles and flatten)
-    service.addRule("clean-confluence-tables", {
-      filter: ["table", "thead", "tbody", "tr", "th", "td", "colgroup", "col"],
-      replacement: (content, node) => {
-        const tag = node.nodeName.toLowerCase();
-        // Stop collapsing newlines in cells to allow code blocks and preserved formatting
-        let cleanContent = content;
-        
-        // Remove literal ** markers as CSS already handles the bolding for TH
-        if (tag === 'th' || tag === 'td') {
-          cleanContent = cleanContent.replace(/\*\*/g, "").replace(/__/g, "");
-        }
-        
-        // Return raw tag with essential attributes only
-        if (tag === 'table') return `\n\n<table class="confluenceTable">${cleanContent}</table>\n\n`;
-        return `<${tag}>${cleanContent}</${tag}>`;
-      }
-    });
+      // 5. Cleanup inside preserved table cells (Strip restrictive styles and flatten)
+      service.addRule("clean-confluence-tables", {
+        filter: [
+          "table",
+          "thead",
+          "tbody",
+          "tr",
+          "th",
+          "td",
+          "colgroup",
+          "col",
+        ],
+        replacement: (content, node) => {
+          const tag = node.nodeName.toLowerCase();
+          // Stop collapsing newlines in cells to allow code blocks and preserved formatting
+          let cleanContent = content;
 
-    // 6. Confluence Task List
-    service.addRule("confluence-tasks", {
-      filter: (node) =>
-        node.nodeName === "LI" && node.classList.contains("task-list-item"),
-      replacement: (content, node) => {
-        const checked = node.querySelector('input[type="checkbox"]')?.checked;
-        return `- [${checked ? "x" : " "}] ${content}\n`;
-      },
-    });
+          // Remove literal ** markers as CSS already handles the bolding for TH
+          if (tag === "th" || tag === "td") {
+            cleanContent = cleanContent.replace(/\*\*/g, "").replace(/__/g, "");
+          }
 
-    service.addRule("confluence-headers", {
-      filter: ["h1", "h2", "h3", "h4", "h5", "h6"],
-      replacement: (content, node) => {
-        const hLevel = Number(node.nodeName.charAt(1));
-        const prefix = "#".repeat(hLevel);
-        const cleanContent = node.textContent.trim();
-        return `\n\n${prefix} ${cleanContent}\n\n`;
-      },
-    });
+          // Return raw tag with essential attributes only
+          if (tag === "table")
+            return `\n\n<table class="confluenceTable">${cleanContent}</table>\n\n`;
+          return `<${tag}>${cleanContent}</${tag}>`;
+        },
+      });
 
-    // 5. Clean up extra wrappers often found in Confluence
-    service.addRule("confluence-wrappers", {
-      filter: (node) => 
-        (node.nodeName === "DIV" && (node.classList.contains("content-wrapper") || node.classList.contains("innerCell"))) ||
-        (node.nodeName === "SPAN" && node.classList.contains("confluence-anchor-link")),
-      replacement: (content) => content
-    });
+      // 6. Confluence Task List
+      service.addRule("confluence-tasks", {
+        filter: (node) =>
+          node.nodeName === "LI" && node.classList.contains("task-list-item"),
+        replacement: (content, node) => {
+          const checked = node.querySelector('input[type="checkbox"]')?.checked;
+          return `- [${checked ? "x" : " "}] ${content}\n`;
+        },
+      });
 
-    // 6. Remove junk tags
-    service.addRule("remove-junk", {
-      filter: ["style", "script", "noscript", "meta"],
-      replacement: () => ""
-    });
+      service.addRule("confluence-headers", {
+        filter: ["h1", "h2", "h3", "h4", "h5", "h6"],
+        replacement: (content, node) => {
+          const hLevel = Number(node.nodeName.charAt(1));
+          const prefix = "#".repeat(hLevel);
+          const cleanContent = node.textContent.trim();
+          return `\n\n${prefix} ${cleanContent}\n\n`;
+        },
+      });
 
-    return service;
-  })());
+      // 5. Clean up extra wrappers often found in Confluence
+      service.addRule("confluence-wrappers", {
+        filter: (node) =>
+          (node.nodeName === "DIV" &&
+            (node.classList.contains("content-wrapper") ||
+              node.classList.contains("innerCell"))) ||
+          (node.nodeName === "SPAN" &&
+            node.classList.contains("confluence-anchor-link")),
+        replacement: (content) => content,
+      });
+
+      // 6. Remove junk tags
+      service.addRule("remove-junk", {
+        filter: ["style", "script", "noscript", "meta"],
+        replacement: () => "",
+      });
+
+      return service;
+    })(),
+  );
 
   const convertWikiToMarkdown = (text) => {
     if (!text) return "";
     let md = text;
-    
+
     // Confluence Wiki Markup conversion
     // Headers: h1. -> #, h2. -> ##, etc.
     md = md.replace(/^h([1-6])\.\s+(.*)$/gm, (match, level, content) => {
       return "#".repeat(level) + " " + content;
     });
-    
+
     // Bold: *text* -> **text**
     md = md.replace(/\*([^\*]+)\*/g, "**$1**");
-    
+
     // Italic: _text_ -> *text*
     md = md.replace(/_([^_]+)_/g, "*$1*");
-    
+
     // Code Blocks: {code...}...{code} -> ```...```
-    md = md.replace(/\{code(?::\w+)?\}([\s\S]*?)\{code\}/g, "\n\n```\n$1\n```\n\n");
-    
+    md = md.replace(
+      /\{code(?::\w+)?\}([\s\S]*?)\{code\}/g,
+      "\n\n```\n$1\n```\n\n",
+    );
+
     // No-format: {noformat}...{noformat} -> ```...```
-    md = md.replace(/\{noformat\}([\s\S]*?)\{noformat\}/g, "\n\n```\n$1\n```\n\n");
+    md = md.replace(
+      /\{noformat\}([\s\S]*?)\{noformat\}/g,
+      "\n\n```\n$1\n```\n\n",
+    );
 
     // Monospaced text (Confluence specific): {{text}} -> `text`
     md = md.replace(/\{\{([^\}]+)\}\}/g, "`$1`");
@@ -718,17 +813,19 @@ export default function App() {
     // Panels/Info/Success blocks (Simplified)
     md = md.replace(/\{panel:?[^\}]*\}([\s\S]*?)\{panel\}/g, "> $1");
     md = md.replace(/\{info:?[^\}]*\}([\s\S]*?)\{info\}/g, "> [!NOTE]\n> $1");
-    md = md.replace(/\{note:?[^\}]*\}([\s\S]*?)\{note\}/g, "> [!IMPORTANT]\n> $1");
-
+    md = md.replace(
+      /\{note:?[^\}]*\}([\s\S]*?)\{note\}/g,
+      "> [!IMPORTANT]\n> $1",
+    );
 
     // Lists: # item -> 1. item, * item -> - item
     md = md.replace(/^\#\s+/gm, "1. ");
-    
+
     // Tables (Strict Confluence Wiki conversion)
     // 1. Headers: ||header1||header2||
     md = md.replace(/^\|\|(.*)\|\|$/gm, (match, content) => {
-      const cols = content.split("||").filter(c => c !== "");
-      const header = "| " + cols.map(c => c.trim()).join(" | ") + " |";
+      const cols = content.split("||").filter((c) => c !== "");
+      const header = "| " + cols.map((c) => c.trim()).join(" | ") + " |";
       const separator = "| " + cols.map(() => "---").join(" | ") + " |";
       return "\n" + header + "\n" + separator;
     });
@@ -736,21 +833,21 @@ export default function App() {
     // 2. Rows: |cell1|cell2|
     md = md.replace(/^\|(.*)\|$/gm, (match, content) => {
       // Skip if it looks like a separator (already converted header)
-      if (content.includes("---")) return match; 
-      const cols = content.split("|").filter(c => c !== "");
+      if (content.includes("---")) return match;
+      const cols = content.split("|").filter((c) => c !== "");
       if (cols.length === 0) return "";
-      return "| " + cols.map(c => c.trim()).join(" | ") + " |";
+      return "| " + cols.map((c) => c.trim()).join(" | ") + " |";
     });
 
     return md;
   };
 
   const handlePaste = (e) => {
-    const html = e.clipboardData.getData('text/html');
-    const plainText = e.clipboardData.getData('text/plain');
-    
+    const html = e.clipboardData.getData("text/html");
+    const plainText = e.clipboardData.getData("text/plain");
+
     let markdown = "";
-    
+
     if (html) {
       // 폰트 정보 등이 포함된 복잡한 HTML인 경우 turndown 사용
       markdown = turndownRef.current.turndown(html);
@@ -762,7 +859,7 @@ export default function App() {
         markdown = plainText;
       }
     }
-    
+
     if (markdown) {
       e.preventDefault();
       // 커서 위치에 삽입
@@ -771,9 +868,9 @@ export default function App() {
       const text = formContent;
       const before = text.substring(0, start);
       const after = text.substring(end);
-      
+
       setFormContent(before + markdown + after);
-      
+
       setTimeout(() => {
         const nextPos = start + markdown.length;
         e.target.selectionStart = e.target.selectionEnd = nextPos;
@@ -798,7 +895,9 @@ export default function App() {
       .then((result) => {
         if (result?.user) {
           console.log("Redirect login successful:", result.user.displayName);
-          showNotification(`${result.user.displayName}님, 환영합니다! (Redirect)`);
+          showNotification(
+            `${result.user.displayName}님, 환영합니다! (Redirect)`,
+          );
         }
       })
       .catch((error) => {
@@ -817,7 +916,10 @@ export default function App() {
       if (currentUser) {
         // notification is handled in getRedirectResult if it was a redirect
         // or here for normal initial load/refresh
-        console.log("Auth state changed: logged in as", currentUser.displayName);
+        console.log(
+          "Auth state changed: logged in as",
+          currentUser.displayName,
+        );
       }
     });
     return () => unsubscribe();
@@ -826,26 +928,28 @@ export default function App() {
   // 5. Handle Web Share Target
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('share') === 'true') {
-      const title = params.get('title') || '';
-      const text = params.get('text') || '';
-      const url = params.get('url') || '';
-      
+    if (params.get("share") === "true") {
+      const title = params.get("title") || "";
+      const text = params.get("text") || "";
+      const url = params.get("url") || "";
+
       let content = text;
       if (url) {
-        content = (content ? content + '\n\n' : '') + url;
+        content = (content ? content + "\n\n" : "") + url;
       }
-      
+
       if (title || content) {
         setFormTitle(title);
         setFormContent(content);
-        setFormCategoryId(selectedCategoryId === "all" ? categories[1].id : selectedCategoryId);
+        setFormCategoryId(
+          selectedCategoryId === "all" ? categories[1].id : selectedCategoryId,
+        );
         setIsWriteModalOpen(true);
-        
+
         // Clean URL to prevent multiple triggers on reload
         const newUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, document.title, newUrl);
-        
+
         showNotification("공유된 내용을 가져왔습니다.");
       }
     }
@@ -858,15 +962,21 @@ export default function App() {
         setIsSyncing(true);
         try {
           console.log("Cloud sync started for user:", user.uid);
-          await setDoc(doc(db, "users", user.uid), {
-            snippets: snippets,
-            categories: categories,
-            lastSynced: new Date().toISOString()
-          }, { merge: true });
+          await setDoc(
+            doc(db, "users", user.uid),
+            {
+              snippets: snippets,
+              categories: categories,
+              lastSynced: new Date().toISOString(),
+            },
+            { merge: true },
+          );
           console.log("Cloud sync successful");
         } catch (error) {
           console.error("Cloud sync failed:", error);
-          showNotification(`동기화 실패: ${error.message} (권한 설정을 확인하세요)`);
+          showNotification(
+            `동기화 실패: ${error.message} (권한 설정을 확인하세요)`,
+          );
         } finally {
           setIsSyncing(false);
         }
@@ -900,19 +1010,19 @@ export default function App() {
   const noteCounts = useMemo(() => {
     // 1. Direct counts (by category name - case-insensitive)
     const directCounts = {};
-    snippets.forEach(s => {
+    snippets.forEach((s) => {
       const catName = (s.category || "").toLowerCase().trim() || "미분류";
       directCounts[catName] = (directCounts[catName] || 0) + 1;
     });
 
     // 2. Aggregate counts (hierarchical) using IDs
     const totalsById = {};
-    
+
     const getAggregateCount = (catId, stack = new Set()) => {
       if (totalsById[catId] !== undefined) return totalsById[catId];
       if (stack.has(catId)) return 0;
-      
-      const cat = categories.find(c => c.id === catId);
+
+      const cat = categories.find((c) => c.id === catId);
       if (!cat) return 0;
 
       const newStack = new Set(stack);
@@ -920,21 +1030,21 @@ export default function App() {
 
       // Direct count for this category name
       const searchName = (cat.name || "").toLowerCase().trim();
-      let count = (directCounts[searchName] || 0);
-      
+      let count = directCounts[searchName] || 0;
+
       // Add counts from subcategories
-      const subCats = categories.filter(c => c.parentId === catId);
-      subCats.forEach(child => {
+      const subCats = categories.filter((c) => c.parentId === catId);
+      subCats.forEach((child) => {
         count += getAggregateCount(child.id, newStack);
       });
-      
+
       totalsById[catId] = count;
       return count;
     };
 
     // Calculate totals for all categories
     const finalCounts = {};
-    categories.forEach(cat => {
+    categories.forEach((cat) => {
       if (cat.id !== "all") {
         const total = getAggregateCount(cat.id);
         finalCounts[cat.id] = total;
@@ -949,12 +1059,15 @@ export default function App() {
     return finalCounts;
   }, [snippets, categories]);
 
-
   const categoryTree = useMemo(() => {
     const tree = [];
     const map = {};
     categories.forEach((cat) => {
-      map[cat.id] = { ...cat, children: [], totalCount: noteCounts[cat.id] ?? noteCounts[cat.name] ?? 0 };
+      map[cat.id] = {
+        ...cat,
+        children: [],
+        totalCount: noteCounts[cat.id] ?? noteCounts[cat.name] ?? 0,
+      };
     });
     categories.forEach((cat) => {
       if (cat.id === "all") return;
@@ -987,10 +1100,11 @@ export default function App() {
 
     // 검색어가 있으면 전역 검색 (카테고리/태그 무시)
     if (q) {
-      return result.filter(s => 
-        (s.title || "").toLowerCase().includes(q) || 
-        (s.content || "").toLowerCase().includes(q) ||
-        (s.tags && s.tags.some(t => t.toLowerCase().includes(q)))
+      return result.filter(
+        (s) =>
+          (s.title || "").toLowerCase().includes(q) ||
+          (s.content || "").toLowerCase().includes(q) ||
+          (s.tags && s.tags.some((t) => t.toLowerCase().includes(q))),
       );
     }
 
@@ -1078,29 +1192,33 @@ export default function App() {
     });
   };
 
-  const closeConfirm = () => setConfirmDialog({ ...confirmDialog, open: false });
+  const closeConfirm = () =>
+    setConfirmDialog({ ...confirmDialog, open: false });
 
   const handleDeleteSnippet = (id) => {
     setConfirmDialog({
       open: true,
       title: "노트 삭제",
-      message: "이 노트를 정말 삭제하시겠습니까? 삭제된 내용은 복구할 수 없습니다.",
+      message:
+        "이 노트를 정말 삭제하시겠습니까? 삭제된 내용은 복구할 수 없습니다.",
       type: "danger",
       onConfirm: () => {
         setSnippets((prev) => prev.filter((s) => s.id !== id));
         showNotification("노트가 삭제되었습니다.");
         closeConfirm();
       },
-      onCancel: closeConfirm
+      onCancel: closeConfirm,
     });
   };
 
   const handleAddCategory = () => {
     const trimmedName = newCatName.trim();
     if (!trimmedName) return;
-    
+
     // Duplicate check
-    if (categories.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())) {
+    if (
+      categories.some((c) => c.name.toLowerCase() === trimmedName.toLowerCase())
+    ) {
       showNotification("이미 존재하는 폴더 이름입니다.");
       return;
     }
@@ -1122,7 +1240,7 @@ export default function App() {
       return;
     }
 
-    const targetCat = categories.find(c => c.id === id);
+    const targetCat = categories.find((c) => c.id === id);
     if (!targetCat) return;
 
     if (targetCat.name === trimmedName) {
@@ -1131,7 +1249,12 @@ export default function App() {
     }
 
     // Duplicate check
-    if (categories.some(c => c.id !== id && c.name.toLowerCase() === trimmedName.toLowerCase())) {
+    if (
+      categories.some(
+        (c) =>
+          c.id !== id && c.name.toLowerCase() === trimmedName.toLowerCase(),
+      )
+    ) {
       showNotification("이미 존재하는 폴더 이름입니다.");
       return;
     }
@@ -1139,14 +1262,16 @@ export default function App() {
     const oldName = targetCat.name;
 
     // Update snippets
-    setSnippets(prev => prev.map(s => 
-      s.category === oldName ? { ...s, category: trimmedName } : s
-    ));
+    setSnippets((prev) =>
+      prev.map((s) =>
+        s.category === oldName ? { ...s, category: trimmedName } : s,
+      ),
+    );
 
     // Update category
-    setCategories(prev => prev.map(c => 
-      c.id === id ? { ...c, name: trimmedName } : c
-    ));
+    setCategories((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, name: trimmedName } : c)),
+    );
 
     setEditingCategoryId(null);
     showNotification("폴더 이름이 변경되었습니다.");
@@ -1156,7 +1281,8 @@ export default function App() {
     setConfirmDialog({
       open: true,
       title: "폴더 삭제",
-      message: "폴더를 삭제하시겠습니까? 하위 폴더와 노트는 최상위로 이동됩니다.",
+      message:
+        "폴더를 삭제하시겠습니까? 하위 폴더와 노트는 최상위로 이동됩니다.",
       type: "danger",
       onConfirm: () => {
         setCategories((prev) =>
@@ -1167,11 +1293,11 @@ export default function App() {
         showNotification("폴더가 삭제되었습니다.");
         closeConfirm();
       },
-      onCancel: closeConfirm
+      onCancel: closeConfirm,
     });
   };
 
-  const openWriteModal = (snippet = null) => {
+  const openWriteModal = (snippet = null, categoryId = null) => {
     if (snippet) {
       setEditingId(snippet.id);
       setFormTitle(snippet.title);
@@ -1186,7 +1312,10 @@ export default function App() {
       setFormContent("");
       setFormCode("");
       setFormCategoryId(
-        selectedCategoryId === "all" ? categories[1].id : selectedCategoryId,
+        categoryId ||
+          (selectedCategoryId === "all"
+            ? categories[1].id
+            : selectedCategoryId),
       );
       setFormTags("");
     }
@@ -1230,37 +1359,34 @@ export default function App() {
     const file = e.target.files[0];
     if (!file) return;
 
-    const fileExtension = file.name.split('.').pop().toLowerCase();
-    
+    const fileExtension = file.name.split(".").pop().toLowerCase();
+
     try {
       showNotification(`${file.name} 파일을 읽는 중...`);
       let content = "";
-      
-      if (fileExtension === 'html' || fileExtension === 'htm') {
+
+      if (fileExtension === "html" || fileExtension === "htm") {
         const text = await file.text();
         // Use turndown for better markdown conversion
         content = turndownRef.current.turndown(text);
-      } 
-      else if (fileExtension === 'docx') {
+      } else if (fileExtension === "docx") {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.convertToHtml({ arrayBuffer });
         content = turndownRef.current.turndown(result.value);
-      } 
-      else if (fileExtension === 'pdf') {
+      } else if (fileExtension === "pdf") {
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
         const pdf = await loadingTask.promise;
         let fullText = "";
-        
+
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
-          const pageText = textContent.items.map(item => item.str).join(" ");
+          const pageText = textContent.items.map((item) => item.str).join(" ");
           fullText += pageText + "\n\n";
         }
         content = fullText.trim();
-      } 
-      else {
+      } else {
         showNotification("지원하지 않는 파일 형식입니다. (.html, .docx, .pdf)");
         return;
       }
@@ -1293,10 +1419,12 @@ export default function App() {
 
   const handleLogin = async (useRedirect = false) => {
     if (!auth || !googleProvider) {
-      showNotification("Firebase 설정이 필요합니다. firebase.js를 확인해 주세요.");
+      showNotification(
+        "Firebase 설정이 필요합니다. firebase.js를 확인해 주세요.",
+      );
       return;
     }
-    
+
     try {
       if (useRedirect) {
         showNotification("로그인 페이지로 이동합니다...");
@@ -1309,23 +1437,26 @@ export default function App() {
     } catch (error) {
       console.error("Login failed:", error);
       let msg = "로그인에 실패했습니다.";
-      
-      if (error.code === 'auth/popup-closed-by-user') {
+
+      if (error.code === "auth/popup-closed-by-user") {
         msg = "로그인 창이 닫혔습니다.";
-      } else if (error.code === 'auth/cancelled-popup-request') {
+      } else if (error.code === "auth/cancelled-popup-request") {
         msg = "이전 로그인 요청이 취소되었습니다. 다시 시도해 주세요.";
-      } else if (error.code === 'auth/popup-blocked') {
-        msg = "브라우저에서 팝업이 차단되었습니다. 설정을 확인하거나 아래 버튼을 눌러보세요.";
-      } else if (error.code === 'auth/unauthorized-domain') {
+      } else if (error.code === "auth/popup-blocked") {
+        msg =
+          "브라우저에서 팝업이 차단되었습니다. 설정을 확인하거나 아래 버튼을 눌러보세요.";
+      } else if (error.code === "auth/unauthorized-domain") {
         msg = "승인되지 않은 도메인입니다. Firebase 콘솔 설정을 확인하세요.";
       } else {
         msg += ` [${error.code}] ${error.message}`;
       }
-      
+
       showNotification(msg);
-      
+
       // If popup fails with blocked error, we could offer redirect automatically or via another button
-      console.warn("Hint: If popups are failing, try signInWithRedirect(auth, googleProvider)");
+      console.warn(
+        "Hint: If popups are failing, try signInWithRedirect(auth, googleProvider)",
+      );
     }
   };
 
@@ -1355,7 +1486,10 @@ export default function App() {
         </div>
       )}
 
-      <ConfirmDialog {...confirmDialog} onCancel={confirmDialog.onCancel || closeConfirm} />
+      <ConfirmDialog
+        {...confirmDialog}
+        onCancel={confirmDialog.onCancel || closeConfirm}
+      />
 
       {isMobileMenuOpen && (
         <div
@@ -1383,7 +1517,10 @@ export default function App() {
           <div className="flex justify-between items-center mb-2 px-2">
             <span className="text-xs font-bold text-slate-400">FOLDERS</span>
             <button
-              onClick={() => setIsCategoryModalOpen(true)}
+              onClick={() => {
+                setNewCatParentId("");
+                setIsCategoryModalOpen(true);
+              }}
               className="text-slate-400 hover:text-blue-600"
             >
               <Settings size={14} />
@@ -1391,7 +1528,7 @@ export default function App() {
           </div>
 
           <ul>
-             <li
+            <li
               onClick={() => {
                 setSelectedCategoryId("all");
                 setSelectedTag(null);
@@ -1399,7 +1536,7 @@ export default function App() {
               }}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer mb-1 ${selectedCategoryId === "all" && !selectedTag && !searchQuery ? "bg-blue-100 text-blue-700 font-bold" : "text-slate-600 hover:bg-slate-100"}`}
             >
-              <Folder size={16} /> 
+              <Folder size={16} />
               <span className="flex-1">전체 보기</span>
               <span className="text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full">
                 {snippets.length}
@@ -1434,6 +1571,11 @@ export default function App() {
                 renameValue={renameValue}
                 onRenameValueChange={setRenameValue}
                 noteCount={cat.totalCount}
+                onAddSubCategory={(id) => {
+                  setNewCatParentId(id);
+                  setIsCategoryModalOpen(true);
+                }}
+                onAddNote={(id) => openWriteModal(null, id)}
               />
             ))}
           </ul>
@@ -1480,8 +1622,8 @@ export default function App() {
               onClick={() => htmlInputRef.current?.click()}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 rounded-lg text-left"
             >
-              <Upload size={16} className="text-blue-500" /> 외부 파일
-              가져오기 (PDF, Word, HTML)
+              <Upload size={16} className="text-blue-500" /> 외부 파일 가져오기
+              (PDF, Word, HTML)
             </button>
             <input
               type="file"
@@ -1496,13 +1638,21 @@ export default function App() {
             {user ? (
               <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col gap-3">
                 <div className="flex items-center gap-3">
-                  <img src={user.photoURL} alt="profile" className="w-8 h-8 rounded-full border border-slate-200" />
+                  <img
+                    src={user.photoURL}
+                    alt="profile"
+                    className="w-8 h-8 rounded-full border border-slate-200"
+                  />
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-slate-800 truncate">{user.displayName}</span>
-                    <span className="text-[10px] text-slate-400 truncate">{user.email}</span>
+                    <span className="text-xs font-bold text-slate-800 truncate">
+                      {user.displayName}
+                    </span>
+                    <span className="text-[10px] text-slate-400 truncate">
+                      {user.email}
+                    </span>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={handleLogout}
                   className="w-full py-2 text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
                 >
@@ -1511,7 +1661,7 @@ export default function App() {
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                <button 
+                <button
                   onClick={() => handleLogin(false)}
                   className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-[0.98]"
                 >
@@ -1574,17 +1724,29 @@ export default function App() {
             )}
           </div>
           <div className="flex items-center gap-2 ml-4">
-            <button 
-              onClick={() => setViewMode(viewMode === 'compact' ? 'detailed' : 'compact')}
+            <button
+              onClick={() =>
+                setViewMode(viewMode === "compact" ? "detailed" : "compact")
+              }
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors
-                ${viewMode === 'detailed' 
-                  ? 'bg-blue-50 border-blue-200 text-blue-700' 
-                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}
+                ${
+                  viewMode === "detailed"
+                    ? "bg-blue-50 border-blue-200 text-blue-700"
+                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                }
               `}
-              title={viewMode === 'compact' ? '상세 정보 표시' : '타이틀만 표시'}
+              title={
+                viewMode === "compact" ? "상세 정보 표시" : "타이틀만 표시"
+              }
             >
-              {viewMode === 'detailed' ? <Layout size={14}/> : <Menu size={14}/>}
-              <span className="hidden sm:inline">{viewMode === 'detailed' ? '상세 모드' : '목록 모드'}</span>
+              {viewMode === "detailed" ? (
+                <Layout size={14} />
+              ) : (
+                <Menu size={14} />
+              )}
+              <span className="hidden sm:inline">
+                {viewMode === "detailed" ? "상세 모드" : "목록 모드"}
+              </span>
             </button>
           </div>
         </header>
@@ -1593,14 +1755,15 @@ export default function App() {
           <div className="max-w-4xl mx-auto space-y-4">
             {filteredSnippets.length > 0 ? (
               filteredSnippets.map((snippet) => {
-                const isExpanded = viewMode === 'detailed' || expandedSnippetIds.has(snippet.id);
-                
+                const isExpanded =
+                  viewMode === "detailed" || expandedSnippetIds.has(snippet.id);
+
                 return (
                   <div
                     key={snippet.id}
                     className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
                   >
-                    <div 
+                    <div
                       className="p-5 cursor-pointer flex justify-between items-start"
                       onClick={() => toggleSnippetExpansion(snippet.id)}
                     >
@@ -1609,9 +1772,14 @@ export default function App() {
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
                             <Folder size={10} /> {snippet.category}
                           </span>
-                          {viewMode === 'compact' && (
-                            <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
-                              <ChevronDown size={14} className="text-slate-400" />
+                          {viewMode === "compact" && (
+                            <div
+                              className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                            >
+                              <ChevronDown
+                                size={14}
+                                className="text-slate-400"
+                              />
                             </div>
                           )}
                         </div>
@@ -1619,7 +1787,10 @@ export default function App() {
                           {snippet.title}
                         </h3>
                         {snippet.tags && snippet.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1.5 focus:outline-none" onClick={(e) => e.stopPropagation()}>
+                          <div
+                            className="flex flex-wrap gap-1 mt-1.5 focus:outline-none"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             {snippet.tags.map((tag) => (
                               <TagChip
                                 key={tag}
@@ -1631,7 +1802,10 @@ export default function App() {
                           </div>
                         )}
                       </div>
-                      <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex gap-2 ml-4"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <button
                           onClick={() => openWriteModal(snippet)}
                           className="text-slate-400 hover:text-blue-600 p-1"
@@ -1821,24 +1995,26 @@ export default function App() {
                       <div className="flex-1 flex flex-col min-w-0">
                         {editingCategoryId === c.id ? (
                           <div className="flex gap-1 pr-2">
-                             <input
+                            <input
                               className="flex-1 border border-blue-400 p-1 rounded text-xs outline-none"
                               value={renameValue}
                               onChange={(e) => setRenameValue(e.target.value)}
                               autoFocus
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleRenameCategory(c.id);
-                                if (e.key === 'Escape') setEditingCategoryId(null);
+                                if (e.key === "Enter")
+                                  handleRenameCategory(c.id);
+                                if (e.key === "Escape")
+                                  setEditingCategoryId(null);
                               }}
                             />
                             <div className="flex gap-0.5">
-                              <button 
+                              <button
                                 onClick={() => handleRenameCategory(c.id)}
                                 className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                               >
                                 <Check size={12} />
                               </button>
-                              <button 
+                              <button
                                 onClick={() => setEditingCategoryId(null)}
                                 className="p-1 bg-slate-200 text-slate-600 rounded hover:bg-slate-300"
                               >
@@ -1848,11 +2024,16 @@ export default function App() {
                           </div>
                         ) : (
                           <>
-                            <span className="font-medium truncate">{c.name}</span>
+                            <span className="font-medium truncate">
+                              {c.name}
+                            </span>
                             {c.parentId && (
                               <span className="text-[10px] text-slate-400 flex items-center gap-1">
                                 <CornerDownRight size={10} />{" "}
-                                {categories.find((p) => p.id === c.parentId)?.name}
+                                {
+                                  categories.find((p) => p.id === c.parentId)
+                                    ?.name
+                                }
                               </span>
                             )}
                           </>
