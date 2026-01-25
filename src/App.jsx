@@ -1749,6 +1749,17 @@ ${formContent.substring(0, 2000)}`;
             >
               <Folder size={16} />
               <span className="flex-1">전체 보기</span>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setNewCatParentId("");
+                  setIsCategoryModalOpen(true);
+                }}
+                className="p-1 text-slate-400 hover:text-blue-600 hover:bg-white rounded transition-colors"
+                title="새 폴더 추가"
+              >
+                <FolderPlus size={14} />
+              </button>
               <span className="text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full">
                 {snippets.length}
               </span>
