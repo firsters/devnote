@@ -2117,6 +2117,7 @@ ${formContent.substring(0, 2000)}`;
                   )}
                 </div>
               </div>
+              <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">
                   태그 (쉼표로 구분)
                 </label>
