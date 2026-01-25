@@ -1470,7 +1470,7 @@ export default function App() {
 
     setIsGeneratingTitle(true);
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
       const prompt = `Analyze the following developer note content and provide a very concise, descriptive title (under 30 characters). Return ONLY the plain text title without any symbols or formatting.
       
 Content:
@@ -1504,7 +1504,7 @@ ${formContent.substring(0, 2000)}`;
     showNotification("이미지에서 텍스트를 추출하는 중...");
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
       
       // Convert file to base64 with robust error handling
       const base64Data = await new Promise((resolve, reject) => {
