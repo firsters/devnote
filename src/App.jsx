@@ -1492,13 +1492,22 @@ ${formContent.substring(0, 2000)}`;
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
-      // Convert file to base64
-      const reader = new FileReader();
-      const base64Promise = new Promise((resolve) => {
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      // Convert file to base64 with robust error handling
+      const base64Data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            const base64 = reader.result.split(',')[1];
+            if (base64) resolve(base64);
+            else reject(new Error("Empty base64 data"));
+          } else {
+            reject(new Error("Invalid reader result type"));
+          }
+        };
+        reader.onerror = () => reject(new Error("파일을 읽는 중 오류가 발생했습니다."));
+        reader.onabort = () => reject(new Error("파일 읽기가 중단되었습니다."));
         reader.readAsDataURL(file);
       });
-      const base64Data = await base64Promise;
 
       const prompt = "Please extract all text from this image and return it accurately. Do not include any explanations or metadata, just the extracted text.";
 
@@ -1507,7 +1516,7 @@ ${formContent.substring(0, 2000)}`;
         {
           inlineData: {
             data: base64Data,
-            mimeType: file.type
+            mimeType: file.type || "image/jpeg"
           }
         }
       ]);
@@ -1517,18 +1526,17 @@ ${formContent.substring(0, 2000)}`;
 
       if (text) {
         setFormContent(prev => (prev ? prev + "\n" + text : text));
-        showNotification("텍스트가 성공적으로 추출되었습니다.");
+        showNotification("텍스트 추출 완료!");
         
-        // If title is empty, try to generate title too
         if (!formTitle.trim()) {
-           handleAutoGenerateTitle(false);
+           setTimeout(() => handleAutoGenerateTitle(false), 500);
         }
       } else {
-        showNotification("이미지에서 텍스트를 찾을 수 없습니다.");
+        showNotification("이미지에서 텍스트를 인식하지 못했습니다.");
       }
     } catch (error) {
       console.error("OCR failed:", error);
-      showNotification("텍스트 추출 중 오류가 발생했습니다.");
+      showNotification(`추출 실패: ${error.message || "알 수 없는 오류"}`);
     } finally {
       setIsOcrLoading(false);
     }
