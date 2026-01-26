@@ -133,7 +133,7 @@ const usePWAInjection = () => {
       {
         name: "viewport",
         content:
-          "width=device-width, initial-scale=1, viewport-fit=cover",
+          "width=device-width, initial-scale=1.0, viewport-fit=cover",
       },
       { name: "mobile-web-app-capable", content: "yes" },
     ];
@@ -1739,7 +1739,7 @@ ${formContent.substring(0, 2000)}`;
   };
 
   return (
-    <div className={`flex h-screen bg-slate-50 font-sans text-slate-900 safe-area-inset-top transition-transform duration-300 ${isRotated ? "rotate-90 origin-top-left fixed top-0 left-full w-[100vh] h-[100vw]" : "w-full"}`}>
+    <div className={`flex h-[100dvh] bg-slate-50 font-sans text-slate-900 safe-area-inset-top transition-transform duration-300 ${isRotated ? "rotate-90 origin-top-left fixed top-0 left-full w-[100vh] h-[100vw]" : "w-full"}`}>
       {notification && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[110] px-6 py-3 rounded-2xl shadow-2xl text-white text-sm font-bold bg-slate-800/90 backdrop-blur border border-slate-700 flex items-center gap-4 animate-fade-in-down whitespace-pre-line text-center min-w-[280px] justify-center max-w-[90vw]">
           <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
