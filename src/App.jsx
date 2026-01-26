@@ -130,11 +130,6 @@ const usePWAInjection = () => {
         content: "black-translucent",
       },
       { name: "theme-color", content: "#ffffff" },
-      {
-        name: "viewport",
-        content:
-          "width=device-width, initial-scale=1.0, viewport-fit=cover",
-      },
       { name: "mobile-web-app-capable", content: "yes" },
     ];
 
@@ -1984,7 +1979,7 @@ ${formContent.substring(0, 2000)}`;
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col h-full overflow-hidden">
         <header className="h-16 bg-white border-b border-slate-200 flex items-center px-4 justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <button
