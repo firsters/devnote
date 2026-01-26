@@ -133,7 +133,7 @@ const usePWAInjection = () => {
       {
         name: "viewport",
         content:
-          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+          "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       { name: "mobile-web-app-capable", content: "yes" },
     ];
@@ -156,6 +156,15 @@ const usePWAInjection = () => {
       document.head.appendChild(iconLink);
     }
     iconLink.href = "/logo.png";
+    
+    // 5. orientation unlock
+    if (screen.orientation && screen.orientation.unlock) {
+      try {
+        screen.orientation.unlock();
+      } catch (e) {
+        console.error("Orientation unlock failed:", e);
+      }
+    }
   }, []);
 };
 
@@ -578,8 +587,8 @@ export default function App() {
     title: "",
     message: "",
     onConfirm: null,
-    type: "danger",
   });
+  const [isRotated, setIsRotated] = useState(false);
 
   // Category Rename States
   const [editingCategoryId, setEditingCategoryId] = useState(null);
@@ -1730,7 +1739,7 @@ ${formContent.substring(0, 2000)}`;
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-900 safe-area-inset-top">
+    <div className={`flex h-screen bg-slate-50 font-sans text-slate-900 safe-area-inset-top transition-transform duration-300 ${isRotated ? "rotate-90 origin-top-left fixed top-0 left-full w-[100vh] h-[100vw]" : "w-full"}`}>
       {notification && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[110] px-6 py-3 rounded-2xl shadow-2xl text-white text-sm font-bold bg-slate-800/90 backdrop-blur border border-slate-700 flex items-center gap-4 animate-fade-in-down whitespace-pre-line text-center min-w-[280px] justify-center max-w-[90vw]">
           <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
@@ -2010,6 +2019,13 @@ ${formContent.substring(0, 2000)}`;
             )}
           </div>
           <div className="flex items-center gap-2 ml-4">
+            <button
+              onClick={() => setIsRotated(!isRotated)}
+              className={`p-2 rounded-lg border transition-colors ${isRotated ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              title="화면 회전 (잠금 모드 대응)"
+            >
+              <Smartphone size={16} className={isRotated ? "rotate-90" : ""} />
+            </button>
             <button
               onClick={() =>
                 setViewMode(viewMode === "compact" ? "detailed" : "compact")
