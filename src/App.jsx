@@ -2018,7 +2018,7 @@ ${formContent.substring(0, 2000)}`;
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2 ml-4">
+          <div className="flex items-center gap-2 ml-4 shrink-0">
             <button
               onClick={() => setIsRotated(!isRotated)}
               className={`p-2 rounded-lg border transition-colors ${isRotated ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
@@ -2046,7 +2046,7 @@ ${formContent.substring(0, 2000)}`;
               ) : (
                 <Menu size={14} />
               )}
-              <span className="hidden sm:inline">
+              <span className="hidden sm:inline whitespace-nowrap">
                 {viewMode === "detailed" ? "상세 모드" : "목록 모드"}
               </span>
             </button>
