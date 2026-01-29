@@ -131,6 +131,7 @@ const INITIAL_SNIPPETS = [
     createdAt: new Date().toISOString(),
     tags: ["Debug"],
   },
+];
 
 const INITIAL_CATEGORIES = [
   { id: "all", name: "전체 보기", parentId: null },
