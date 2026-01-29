@@ -80,7 +80,6 @@ const genAI = GEMINI_API_KEY && GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY_HERE"
 // -----------------------------------------------------------------------------
 // 1. 초기 데이터
 // -----------------------------------------------------------------------------
-const INITIAL_SNIPPETS = [
   {
     id: "1",
     title: "앱 모드 실행 확인",
@@ -100,7 +99,37 @@ const INITIAL_SNIPPETS = [
     createdAt: new Date().toISOString(),
     tags: ["PWA", "Tutorial"],
   },
-];
+  {
+    id: "test-table",
+    title: "Table Rendering Test",
+    category: "Development",
+    content: `
+# Table Test
+
+## 1. Markdown Table (remark-gfm)
+| Header 1 | Header 2 |
+|Data 1|Data 2|
+
+## 2. HTML Table (rehype-raw)
+<table>
+  <thead>
+    <tr>
+      <th>HTML H1</th>
+      <th>HTML H2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Val 1</td>
+      <td>Val 2</td>
+    </tr>
+  </tbody>
+</table>
+    `,
+    code: "",
+    createdAt: new Date().toISOString(),
+    tags: ["Debug"],
+  },
 
 const INITIAL_CATEGORIES = [
   { id: "all", name: "전체 보기", parentId: null },
