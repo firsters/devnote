@@ -253,13 +253,13 @@ const MarkdownView = ({ content, code }) => {
     <div className="devnote-markdown">
       <style>{`
         .devnote-markdown table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-        .devnote-markdown th, .devnote-markdown td { border: 1px solid #dfe1e6; padding: 8px 12px; text-align: left; }
-        .devnote-markdown th { background-color: #f4f5f7; font-weight: bold; }
-        .devnote-markdown tr:nth-child(even) { background-color: #f9f9fb; }
-        .devnote-markdown blockquote[data-label] { margin: 1em 0; border-left: 4px solid #4c9aff; padding-left: 1em; color: #172b4d; }
+        .devnote-markdown th, .devnote-markdown td { border: 1px solid rgb(var(--border-main)); padding: 8px 12px; text-align: left; }
+        .devnote-markdown th { background-color: rgb(var(--bg-subtle)); font-weight: bold; color: rgb(var(--text-main)); }
+        .devnote-markdown tr:nth-child(even) { background-color: rgba(var(--bg-subtle), 0.3); }
+        .devnote-markdown blockquote[data-label] { margin: 1em 0; border-left: 4px solid rgb(var(--primary-main)); padding-left: 1em; color: rgb(var(--text-muted)); }
         .devnote-markdown .inline-code {
-          background-color: #f0f2f5;
-          color: #e03131;
+          background-color: rgb(var(--bg-subtle));
+          color: rgb(var(--danger-main));
           padding: 0.2em 0.4em;
           border-radius: 4px;
           font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
