@@ -2166,7 +2166,11 @@ ${formContent.substring(0, 2000)}`;
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col h-full overflow-hidden bg-background">
+      <main 
+        className={`flex-1 flex flex-col h-full overflow-hidden bg-background transition-all duration-300 
+          ${isSidebarCollapsed ? "md:ml-20" : "md:ml-64"}
+        `}
+      >
         <header className="h-16 bg-background-paper border-b border-border flex items-center px-4 justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <button
