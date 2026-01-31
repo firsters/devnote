@@ -1898,14 +1898,14 @@ ${formContent.substring(0, 2000)}`;
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
         <div className="h-16 flex items-center px-6 border-b border-border">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-2 shadow-lg shadow-blue-500/30">
+          <div 
+            onClick={() => window.location.reload()}
+            className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-2 shadow-lg shadow-blue-500/30 cursor-pointer hover:bg-blue-700 transition-colors"
+          >
             <Code className="text-white" size={20} />
           </div>
-          <h1 className="text-xl font-black tracking-tight text-text-main">
+          <h1 className="text-xl font-black tracking-tight text-text-main cursor-pointer" onClick={() => window.location.reload()}>
             {APP_TITLE}
-            <span className="text-blue-600 text-[10px] ml-1 align-top italic opacity-80">
-              {APP_VERSION}
-            </span>
           </h1>
           <button
             onClick={() => setIsMobileMenuOpen(false)}
