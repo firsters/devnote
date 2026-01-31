@@ -59,6 +59,7 @@ import {
   Loader2,
   Camera,
   Image as ImageIcon,
+  ClipboardPaste,
 } from "lucide-react";
 
 // -----------------------------------------------------------------------------
@@ -628,6 +629,7 @@ export default function App() {
   const htmlInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const imageInputRef = useRef(null);
+  const contentAreaRef = useRef(null);
   const hasFetchedRef = useRef(false);
   const notificationTimeoutRef = useRef(null);
   const turndownRef = useRef(
@@ -962,6 +964,59 @@ export default function App() {
         const nextPos = start + markdown.length;
         e.target.selectionStart = e.target.selectionEnd = nextPos;
       }, 0);
+    }
+  };
+
+  const handleManualPaste = async () => {
+    try {
+      // Use navigator.clipboard.read() to get both HTML and plain text
+      const items = await navigator.clipboard.read();
+      let html = "";
+      let plainText = "";
+
+      for (const item of items) {
+        if (item.types.includes("text/html")) {
+          const blob = await item.getType("text/html");
+          html = await blob.text();
+        }
+        if (item.types.includes("text/plain")) {
+          const blob = await item.getType("text/plain");
+          plainText = await blob.text();
+        }
+      }
+
+      let markdown = "";
+      if (html) {
+        markdown = turndownRef.current.turndown(html);
+      } else if (plainText) {
+        if (/^h[1-6]\.\s|^\* |^\|\||\{code/.test(plainText)) {
+          markdown = convertWikiToMarkdown(plainText);
+        } else {
+          markdown = plainText;
+        }
+      }
+
+      if (markdown && contentAreaRef.current) {
+        const textarea = contentAreaRef.current;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = formContent;
+        const before = text.substring(0, start);
+        const after = text.substring(end);
+
+        setFormContent(before + markdown + after);
+        textarea.focus();
+
+        setTimeout(() => {
+          const nextPos = start + markdown.length;
+          textarea.selectionStart = textarea.selectionEnd = nextPos;
+        }, 0);
+      } else if (!markdown) {
+        showNotification("클립보드가 비어있거나 지원되지 않는 형식입니다.");
+      }
+    } catch (err) {
+      console.error("Manual paste failed:", err);
+      showNotification("클립보드 접근 권한이 없거나 브라우저에서 지원하지 않습니다.");
     }
   };
 
@@ -2254,6 +2309,13 @@ ${formContent.substring(0, 2000)}`;
                       >
                         <ImageIcon size={14} />
                       </button>
+                      <button
+                        onClick={handleManualPaste}
+                        className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="클립보드 붙여넣기"
+                      >
+                        <ClipboardPaste size={14} />
+                      </button>
                       <input 
                         type="file" 
                         ref={cameraInputRef} 
@@ -2285,6 +2347,7 @@ ${formContent.substring(0, 2000)}`;
                 </div>
                 <div className="relative flex-1">
                   <textarea
+                    ref={contentAreaRef}
                     className={`w-full h-full p-3 border border-slate-300 rounded-lg outline-none focus:border-blue-500 resize-none font-sans leading-relaxed ${isOcrLoading ? 'opacity-50 pointer-events-none' : ''}`}
                     placeholder={`내용 입력...\n\n\`\`\`javascript\nconsole.log("Hello");\n\`\`\``}
                     value={formContent}
