@@ -2142,7 +2142,6 @@ ${formContent.substring(0, 2000)}`;
               </div>
             )}
           </div>
-          </div>
         </nav>
 
         <div className="p-4 border-t border-border">
