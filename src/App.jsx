@@ -379,6 +379,7 @@ const CategoryNode = ({
   noteCount,
   onAddSubCategory,
   onAddNote,
+  isSidebarCollapsed,
 }) => {
   const hasChildren = category.children && category.children.length > 0;
   const isExpanded = expandedIds.has(category.id);
@@ -408,101 +409,108 @@ const CategoryNode = ({
         }}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors mb-0.5 group/cat relative
           ${isSelected ? "bg-blue-100/50 text-blue-600 font-bold" : "text-text-muted hover:bg-background-subtle"}
+          ${isSidebarCollapsed ? "justify-center px-2" : ""}
         `}
-        style={{ paddingLeft: `${depth * 16 + 12}px` }}
+        style={{ paddingLeft: isSidebarCollapsed ? undefined : `${depth * 16 + 12}px` }}
+        title={isSidebarCollapsed ? category.name : undefined}
       >
-        <div
-          className={`p-0.5 rounded ${hasChildren ? "visible" : "invisible"}`}
-        >
-          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </div>
+        {!isSidebarCollapsed && (
+          <div
+            className={`p-0.5 rounded ${hasChildren ? "visible" : "invisible"}`}
+          >
+            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </div>
+        )}
         <span className="flex-shrink-0 opacity-70">{getIcon()}</span>
 
-        {isEditing ? (
-          <div
-            className="flex-1 flex gap-1 pr-1"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <input
-              className="flex-1 border border-blue-400 p-0.5 rounded text-xs outline-none bg-background-paper text-text-main font-normal"
-              value={renameValue}
-              onChange={(e) => onRenameValueChange(e.target.value)}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") onEditSave(category.id);
-                if (e.key === "Escape") onEditCancel();
-              }}
-            />
-            <div className="flex gap-0.5">
-              <button
-                onClick={() => onEditSave(category.id)}
-                className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                <Check size={10} />
-              </button>
-              <button
-                onClick={() => onEditCancel()}
-                className="p-1 bg-background-subtle text-text-muted rounded hover:bg-slate-300"
-              >
-                <X size={10} />
-              </button>
+        {!isSidebarCollapsed && (
+          isEditing ? (
+            <div
+              className="flex-1 flex gap-1 pr-1"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                className="flex-1 border border-blue-400 p-0.5 rounded text-xs outline-none bg-background-paper text-text-main font-normal"
+                value={renameValue}
+                onChange={(e) => onRenameValueChange(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onEditSave(category.id);
+                  if (e.key === "Escape") onEditCancel();
+                }}
+              />
+              <div className="flex gap-0.5">
+                <button
+                  onClick={() => onEditSave(category.id)}
+                  className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  <Check size={10} />
+                </button>
+                <button
+                  onClick={() => onEditCancel()}
+                  className="p-1 bg-background-subtle text-text-muted rounded hover:bg-slate-300"
+                >
+                  <X size={10} />
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <>
-            <span className="truncate flex-1 min-w-0 pr-[88px] md:pr-0" title={category.name}>{category.name}</span>
-            {noteCount !== undefined && (
-              <span className="text-[10px] font-medium px-1.5 py-0.5 bg-background-subtle text-text-muted rounded-full shrink-0 group-hover/cat:bg-background-paper transition-colors">
-                {noteCount}
-              </span>
-            )}
-            <div className="absolute right-2 flex gap-1 opacity-100 md:opacity-0 md:group-hover/cat:opacity-100 transition-opacity bg-background-paper p-1 rounded-md shadow-sm border border-border z-10">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddNote(category.id);
-                }}
-                className="text-text-subtle hover:text-green-600 p-1"
-                title="새 노트 작성"
-              >
-                <FilePlus size={12} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddSubCategory(category.id);
-                }}
-                className="text-text-subtle hover:text-blue-600 p-1"
-                title="하위 폴더 추가"
-              >
-                <FolderPlus size={12} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditStart(category.id, category.name);
-                }}
-                className="text-text-subtle hover:text-blue-600 p-1"
-                title="폴더 이름 변경"
-              >
-                <Edit2 size={12} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(category.id);
-                }}
-                className="text-text-subtle hover:text-red-500 p-1"
-                title="폴더 삭제"
-              >
-                <Trash2 size={12} />
-              </button>
-            </div>
-          </>
+          ) : (
+            <>
+              <span className="truncate flex-1 min-w-0 pr-[88px] md:pr-0" title={category.name}>{category.name}</span>
+              {noteCount !== undefined && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 bg-background-subtle text-text-muted rounded-full shrink-0 group-hover/cat:bg-background-paper transition-colors">
+                  {noteCount}
+                </span>
+              )}
+              <div className="absolute right-2 flex gap-1 opacity-100 md:opacity-0 md:group-hover/cat:opacity-100 transition-opacity bg-background-paper p-1 rounded-md shadow-sm border border-border z-10">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddNote(category.id);
+                  }}
+                  className="text-text-subtle hover:text-green-600 p-1"
+                  title="새 노트 작성"
+                >
+                  <FilePlus size={12} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddSubCategory(category.id);
+                  }}
+                  className="text-text-subtle hover:text-blue-600 p-1"
+                  title="하위 폴더 추가"
+                >
+                  <FolderPlus size={12} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditStart(category.id, category.name);
+                  }}
+                  className="text-text-subtle hover:text-blue-600 p-1"
+                  title="폴더 이름 변경"
+                >
+                  <Edit2 size={12} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(category.id);
+                  }}
+                  className="text-text-subtle hover:text-red-500 p-1"
+                  title="폴더 삭제"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </>
+          )
         )}
       </div>
       {hasChildren &&
         isExpanded &&
+        !isSidebarCollapsed && // Hide children when collapsed for simplicity
         category.children.map((child) => (
           <CategoryNode
             key={child.id}
@@ -522,6 +530,7 @@ const CategoryNode = ({
             noteCount={child.totalCount}
             onAddSubCategory={onAddSubCategory}
             onAddNote={onAddNote}
+            isSidebarCollapsed={isSidebarCollapsed}
           />
         ))}
     </>
@@ -638,6 +647,15 @@ export default function App() {
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Sidebar Collapse State
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('sidebarCollapsed') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', isSidebarCollapsed);
+  }, [isSidebarCollapsed]);
 
   // Category Rename States
   const [editingCategoryId, setEditingCategoryId] = useState(null);
@@ -1894,19 +1912,23 @@ ${formContent.substring(0, 2000)}`;
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 bg-background-paper w-64 border-r border-border transform transition-transform z-50 flex flex-col
-        ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
+        className={`fixed inset-y-0 left-0 bg-background-paper border-r border-border transform transition-all duration-300 z-50 flex flex-col
+        ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
+        ${isSidebarCollapsed ? "w-20" : "w-64"}
+        `}
       >
-        <div className="h-16 flex items-center px-6 border-b border-border">
+        <div className={`h-16 flex items-center border-b border-border ${isSidebarCollapsed ? "justify-center px-0" : "px-6"}`}>
           <div 
-            onClick={() => window.location.reload()}
-            className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-2 shadow-lg shadow-blue-500/30 cursor-pointer hover:bg-blue-700 transition-colors"
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30 cursor-pointer hover:bg-blue-700 transition-colors shrink-0"
           >
             <Code className="text-white" size={20} />
           </div>
-          <h1 className="text-xl font-black tracking-tight text-text-main cursor-pointer" onClick={() => window.location.reload()}>
-            {APP_TITLE}
-          </h1>
+          {!isSidebarCollapsed && (
+            <h1 className="text-xl font-black tracking-tight text-text-main cursor-pointer ml-2" onClick={() => window.location.reload()}>
+              {APP_TITLE}
+            </h1>
+          )}
           <button
             onClick={() => setIsMobileMenuOpen(false)}
             className="md:hidden ml-auto text-text-subtle"
@@ -1916,14 +1938,15 @@ ${formContent.substring(0, 2000)}`;
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3 custom-scrollbar">
-          <div className="flex justify-between items-center mb-2 px-2">
-            <span className="text-xs font-bold text-slate-400">FOLDERS</span>
+          <div className={`flex justify-between items-center mb-2 px-2 ${isSidebarCollapsed ? "flex-col gap-2" : ""}`}>
+            {!isSidebarCollapsed && <span className="text-xs font-bold text-slate-400">FOLDERS</span>}
             <button
               onClick={() => {
                 setNewCatParentId("");
                 setIsCategoryModalOpen(true);
               }}
               className="text-slate-400 hover:text-blue-600"
+              title="폴더 관리"
             >
               <Settings size={14} />
             </button>
@@ -1936,24 +1959,31 @@ ${formContent.substring(0, 2000)}`;
                 setSelectedTag(null);
                 setSearchQuery("");
               }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer mb-1 ${selectedCategoryId === "all" && !selectedTag && !searchQuery ? "bg-blue-100 text-blue-700 font-bold" : "text-slate-600 hover:bg-slate-100"}`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer mb-1 ${selectedCategoryId === "all" && !selectedTag && !searchQuery ? "bg-blue-100 text-blue-700 font-bold" : "text-slate-600 hover:bg-slate-100"}
+              ${isSidebarCollapsed ? "justify-center px-2" : ""}
+              `}
+              title={isSidebarCollapsed ? "전체 보기" : undefined}
             >
               <Folder size={16} />
-              <span className="flex-1">전체 보기</span>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setNewCatParentId("");
-                  setIsCategoryModalOpen(true);
-                }}
-                className="p-1 text-slate-400 hover:text-blue-600 hover:bg-white rounded transition-colors"
-                title="새 폴더 추가"
-              >
-                <FolderPlus size={14} />
-              </button>
-              <span className="text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full">
-                {snippets.length}
-              </span>
+              {!isSidebarCollapsed && (
+                <>
+                  <span className="flex-1">전체 보기</span>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setNewCatParentId("");
+                      setIsCategoryModalOpen(true);
+                    }}
+                    className="p-1 text-slate-400 hover:text-blue-600 hover:bg-white rounded transition-colors"
+                    title="새 폴더 추가"
+                  >
+                    <FolderPlus size={14} />
+                  </button>
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full">
+                    {snippets.length}
+                  </span>
+                </>
+              )}
             </li>
             {categoryTree.map((cat) => (
               <CategoryNode
@@ -1989,6 +2019,7 @@ ${formContent.substring(0, 2000)}`;
                   setIsCategoryModalOpen(true);
                 }}
                 onAddNote={(id) => openWriteModal(null, id)}
+                isSidebarCollapsed={isSidebarCollapsed}
               />
             ))}
           </ul>
@@ -2014,35 +2045,36 @@ ${formContent.substring(0, 2000)}`;
           </div>
 
           <div className="mt-6 mb-2 px-2 text-xs font-bold text-slate-400">
-            TOOLS
+            {!isSidebarCollapsed && "TOOLS"}
           </div>
           <div className="space-y-1">
             <button
               onClick={() => setIsInstallModalOpen(true)}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-green-50 hover:text-green-700 rounded-lg text-left"
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-green-50 hover:text-green-700 rounded-lg text-left ${isSidebarCollapsed ? "justify-center" : ""}`}
             >
-              <Smartphone size={16} className="text-green-600" /> 앱 설치
-              (전체화면)
+              <Smartphone size={16} className="text-green-600" />
+              {!isSidebarCollapsed && "앱 설치 (전체화면)"}
             </button>
             <button
               onClick={handleConfluenceExport}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg text-left"
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg text-left ${isSidebarCollapsed ? "justify-center" : ""}`}
             >
-              <FileCode size={16} className="text-blue-600" /> Confluence
-              내보내기
+              <FileCode size={16} className="text-blue-600" />
+              {!isSidebarCollapsed && "Confluence 내보내기"}
             </button>
             <button
               onClick={handleShareLink}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-left"
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-left ${isSidebarCollapsed ? "justify-center" : ""}`}
             >
-              <Share size={16} className="text-indigo-600" /> 설치링크 보내기
+              <Share size={16} className="text-indigo-600" />
+              {!isSidebarCollapsed && "설치링크 보내기"}
             </button>
             <button
               onClick={() => htmlInputRef.current?.click()}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 rounded-lg text-left"
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 rounded-lg text-left ${isSidebarCollapsed ? "justify-center" : ""}`}
             >
-              <Upload size={16} className="text-blue-500" /> 외부 파일 가져오기
-              (PDF, Word, HTML)
+              <Upload size={16} className="text-blue-500" />
+              {!isSidebarCollapsed && "외부 파일 가져오기(PDF, Word, HTML)"}
             </button>
             <button
               className="hidden"
@@ -2063,55 +2095,64 @@ ${formContent.substring(0, 2000)}`;
 
           <div className="mt-auto pt-6 px-2">
             {user ? (
-              <div className="bg-background-subtle rounded-xl p-3 border border-border flex flex-col gap-3">
-                <div className="flex items-center gap-3">
+              <div className={`bg-background-subtle rounded-xl p-3 border border-border flex flex-col gap-3 ${isSidebarCollapsed ? "items-center" : ""}`}>
+                <div className={`flex items-center gap-3 ${isSidebarCollapsed ? "justify-center" : ""}`}>
                   <img
                     src={user.photoURL}
                     alt="profile"
                     className="w-8 h-8 rounded-full border border-border"
                   />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-text-main truncate">
-                      {user.displayName}
-                    </span>
-                    <span className="text-[10px] text-text-subtle truncate">
-                      {user.email}
-                    </span>
-                  </div>
+                  {!isSidebarCollapsed && (
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold text-text-main truncate">
+                        {user.displayName}
+                      </span>
+                      <span className="text-[10px] text-text-subtle truncate">
+                        {user.email}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="w-full py-2 text-xs font-bold text-text-muted hover:text-red-500 hover:bg-red-50/10 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                  className={`w-full py-2 text-xs font-bold text-text-muted hover:text-red-500 hover:bg-red-50/10 rounded-lg transition-colors border border-transparent hover:border-red-100 flex justify-center items-center gap-2`}
+                  title="로그아웃"
                 >
-                  로그아웃
+                  {isSidebarCollapsed ? <LogOut size={16} /> : "로그아웃"}
                 </button>
               </div>
             ) : (
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => handleLogin(false)}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-[0.98] dark:bg-slate-700 dark:hover:bg-slate-600"
+                  className={`w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-[0.98] dark:bg-slate-700 dark:hover:bg-slate-600 ${isSidebarCollapsed ? "p-0" : ""}`}
+                  title="로그인 (구글 클라우드 백업)"
                 >
                   <Globe size={18} />
-                  로그인 (구글 클라우드 백업)
+                  {!isSidebarCollapsed && "로그인 (구글 클라우드 백업)"}
                 </button>
-                <button
-                  onClick={() => handleLogin(true)}
-                  className="text-[11px] text-text-subtle hover:text-text-muted underline underline-offset-2"
-                >
-                  팝업이 안 뜨나요? 화면 전환으로 로그인
-                </button>
+                {!isSidebarCollapsed && (
+                  <button
+                    onClick={() => handleLogin(true)}
+                    className="text-[11px] text-text-subtle hover:text-text-muted underline underline-offset-2"
+                  >
+                    팝업이 안 뜨나요? 화면 전환으로 로그인
+                  </button>
+                )}
               </div>
             )}
+          </div>
           </div>
         </nav>
 
         <div className="p-4 border-t border-border">
           <button
             onClick={() => openWriteModal()}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-bold flex justify-center items-center gap-2 shadow-sm transition-colors"
+            className={`w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-bold flex justify-center items-center gap-2 shadow-sm transition-colors ${isSidebarCollapsed ? "px-0" : ""}`}
+            title={isSidebarCollapsed ? "새 노트 작성" : undefined}
           >
-            <Plus size={16} /> 새 노트 작성
+            <Plus size={16} />
+            {!isSidebarCollapsed && "새 노트 작성"}
           </button>
         </div>
       </aside>
