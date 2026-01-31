@@ -62,6 +62,7 @@ import {
   ClipboardPaste,
   Sun,
   Moon,
+  LogOut,
 } from "lucide-react";
 
 // -----------------------------------------------------------------------------
