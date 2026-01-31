@@ -450,7 +450,7 @@ const CategoryNode = ({
           </div>
         ) : (
           <>
-            <span className="truncate flex-1">{category.name}</span>
+            <span className="truncate flex-1" title={category.name}>{category.name}</span>
             {noteCount !== undefined && (
               <span className="text-[10px] font-medium px-1.5 py-0.5 bg-background-subtle text-text-muted rounded-full shrink-0 group-hover/cat:bg-background-paper transition-colors">
                 {noteCount}
@@ -1306,6 +1306,19 @@ export default function App() {
         tree.push(map[cat.id]);
       }
     });
+
+    // Recursive sort helper
+    const sortNodes = (nodes) => {
+      nodes.sort((a, b) => a.name.localeCompare(b.name));
+      nodes.forEach((node) => {
+        if (node.children.length > 0) {
+          sortNodes(node.children);
+        }
+      });
+    };
+
+    sortNodes(tree);
+
     return tree;
   }, [categories, noteCounts]);
 
