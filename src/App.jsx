@@ -450,13 +450,13 @@ const CategoryNode = ({
           </div>
         ) : (
           <>
-            <span className="truncate flex-1 min-w-0" title={category.name}>{category.name}</span>
+            <span className="truncate flex-1 min-w-0 pr-[88px] md:pr-0" title={category.name}>{category.name}</span>
             {noteCount !== undefined && (
               <span className="text-[10px] font-medium px-1.5 py-0.5 bg-background-subtle text-text-muted rounded-full shrink-0 group-hover/cat:bg-background-paper transition-colors">
                 {noteCount}
               </span>
             )}
-            <div className="absolute right-2 flex gap-1 opacity-0 group-hover/cat:opacity-100 transition-opacity bg-background-paper p-1 rounded-md shadow-sm border border-border z-10">
+            <div className="absolute right-2 flex gap-1 opacity-100 md:opacity-0 md:group-hover/cat:opacity-100 transition-opacity bg-background-paper p-1 rounded-md shadow-sm border border-border z-10">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
