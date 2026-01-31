@@ -60,6 +60,8 @@ import {
   Camera,
   Image as ImageIcon,
   ClipboardPaste,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 // -----------------------------------------------------------------------------
@@ -211,14 +213,14 @@ const CodeBlock = ({ code }) => {
   const lines = code.split("\n");
 
   return (
-    <div className="bg-[#f4f5f7] text-slate-800 rounded-lg my-4 overflow-hidden border border-slate-200 shadow-sm group font-sans">
-      <div className="flex justify-between items-center px-3 py-1 bg-[#ebecf0] border-b border-slate-200">
+    <div className="bg-background-subtle text-text-main rounded-lg my-4 overflow-hidden border border-border shadow-sm group font-sans">
+      <div className="flex justify-between items-center px-3 py-1 bg-background-subtle border-b border-border">
         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
           Code Block
         </span>
         <button
           onClick={handleCopy}
-          className="text-[11px] flex items-center gap-1.5 text-slate-500 hover:text-blue-600 transition-colors py-0.5 px-2 rounded hover:bg-white"
+          className="text-[11px] flex items-center gap-1.5 text-text-muted hover:text-blue-600 transition-colors py-0.5 px-2 rounded hover:bg-background-paper"
         >
           {copied ? (
             <Check size={12} className="text-green-500" />
@@ -228,9 +230,9 @@ const CodeBlock = ({ code }) => {
           {copied ? "복사됨" : "복사"}
         </button>
       </div>
-      <div className="flex bg-[#f4f5f7] custom-scrollbar overflow-x-auto">
+      <div className="flex bg-background-subtle custom-scrollbar overflow-x-auto">
         {/* Line Numbers */}
-        <div className="bg-[#ebecf0]/50 text-slate-400 text-right py-4 pr-3 pl-4 select-none border-r border-slate-200 text-[12px] font-mono min-w-[3.5rem] leading-relaxed">
+        <div className="bg-background-subtle/50 text-text-subtle text-right py-4 pr-3 pl-4 select-none border-r border-border text-[12px] font-mono min-w-[3.5rem] leading-relaxed">
           {lines.map((_, i) => (
             <div key={i}>{i + 1}</div>
           ))}
@@ -291,8 +293,8 @@ const MarkdownView = ({ content, code }) => {
         {content}
       </ReactMarkdown>
       {code && (
-        <div className="mt-4 pt-4 border-t border-slate-100">
-          <div className="text-xs font-bold text-slate-400 mb-1">
+        <div className="mt-4 pt-4 border-t border-border-subtle">
+          <div className="text-xs font-bold text-text-subtle mb-1">
             Attached Code:
           </div>
           <CodeBlock code={code} />
@@ -312,7 +314,7 @@ const TagChip = ({ tag, onClick, active }) => (
       ${
         active
           ? "bg-blue-600 text-white"
-          : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+          : "bg-blue-50/50 text-blue-600 hover:bg-blue-100/50"
       }
     `}
   >
@@ -331,20 +333,20 @@ const ConfirmDialog = ({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden animate-zoom-in">
+      <div className="bg-background-paper w-full max-w-sm rounded-xl shadow-2xl overflow-hidden animate-zoom-in">
         <div className="p-6 text-center">
           <div
             className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${type === "danger" ? "bg-red-100 text-red-600" : "bg-blue-100 text-blue-600"}`}
           >
             {type === "danger" ? <Trash2 size={24} /> : <Info size={24} />}
           </div>
-          <h3 className="font-bold text-lg text-slate-800 mb-2">{title}</h3>
-          <p className="text-slate-600 text-sm leading-relaxed">{message}</p>
+          <h3 className="font-bold text-lg text-text-main mb-2">{title}</h3>
+          <p className="text-text-muted text-sm leading-relaxed">{message}</p>
         </div>
-        <div className="flex border-t border-slate-100">
+        <div className="flex border-t border-border">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50 border-r border-slate-100 transition-colors"
+            className="flex-1 px-4 py-3 text-sm font-medium text-text-muted hover:bg-background-subtle border-r border-border transition-colors"
           >
             취소
           </button>
@@ -389,7 +391,7 @@ const CategoryNode = ({
       <Folder
         size={16}
         className={
-          isSelected || isExpanded ? "text-blue-500" : "text-slate-400"
+          isSelected || isExpanded ? "text-blue-500" : "text-text-subtle"
         }
       />
     );
@@ -405,7 +407,7 @@ const CategoryNode = ({
           }
         }}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors mb-0.5 group/cat
-          ${isSelected ? "bg-blue-100 text-blue-700 font-bold" : "text-slate-600 hover:bg-slate-100"}
+          ${isSelected ? "bg-blue-100/50 text-blue-600 font-bold" : "text-text-muted hover:bg-background-subtle"}
         `}
         style={{ paddingLeft: `${depth * 16 + 12}px` }}
       >
@@ -422,7 +424,7 @@ const CategoryNode = ({
             onClick={(e) => e.stopPropagation()}
           >
             <input
-              className="flex-1 border border-blue-400 p-0.5 rounded text-xs outline-none bg-white font-normal"
+              className="flex-1 border border-blue-400 p-0.5 rounded text-xs outline-none bg-background-paper text-text-main font-normal"
               value={renameValue}
               onChange={(e) => onRenameValueChange(e.target.value)}
               autoFocus
@@ -440,7 +442,7 @@ const CategoryNode = ({
               </button>
               <button
                 onClick={() => onEditCancel()}
-                className="p-1 bg-slate-200 text-slate-600 rounded hover:bg-slate-300"
+                className="p-1 bg-background-subtle text-text-muted rounded hover:bg-slate-300"
               >
                 <X size={10} />
               </button>
@@ -450,7 +452,7 @@ const CategoryNode = ({
           <>
             <span className="truncate flex-1">{category.name}</span>
             {noteCount !== undefined && (
-              <span className="text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full shrink-0 group-hover/cat:bg-white transition-colors">
+              <span className="text-[10px] font-medium px-1.5 py-0.5 bg-background-subtle text-text-muted rounded-full shrink-0 group-hover/cat:bg-background-paper transition-colors">
                 {noteCount}
               </span>
             )}
@@ -460,7 +462,7 @@ const CategoryNode = ({
                   e.stopPropagation();
                   onAddNote(category.id);
                 }}
-                className="text-slate-400 hover:text-green-600 p-1"
+                className="text-text-subtle hover:text-green-600 p-1"
                 title="새 노트 작성"
               >
                 <FilePlus size={12} />
@@ -470,7 +472,7 @@ const CategoryNode = ({
                   e.stopPropagation();
                   onAddSubCategory(category.id);
                 }}
-                className="text-slate-400 hover:text-blue-600 p-1"
+                className="text-text-subtle hover:text-blue-600 p-1"
                 title="하위 폴더 추가"
               >
                 <FolderPlus size={12} />
@@ -480,7 +482,7 @@ const CategoryNode = ({
                   e.stopPropagation();
                   onEditStart(category.id, category.name);
                 }}
-                className="text-slate-400 hover:text-blue-600 p-1"
+                className="text-text-subtle hover:text-blue-600 p-1"
                 title="폴더 이름 변경"
               >
                 <Edit2 size={12} />
@@ -490,7 +492,7 @@ const CategoryNode = ({
                   e.stopPropagation();
                   onDelete(category.id);
                 }}
-                className="text-slate-400 hover:text-red-500 p-1"
+                className="text-text-subtle hover:text-red-500 p-1"
                 title="폴더 삭제"
               >
                 <Trash2 size={12} />
@@ -616,6 +618,26 @@ export default function App() {
     onConfirm: null,
   });
   const [isRotated, setIsRotated] = useState(false);
+  
+  const [theme, setTheme] = useState(() => {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+      return localStorage.getItem('theme');
+    }
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   // Category Rename States
   const [editingCategoryId, setEditingCategoryId] = useState(null);
@@ -1853,20 +1875,28 @@ ${formContent.substring(0, 2000)}`;
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
+        className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 bg-white border-r border-slate-200 w-72 flex flex-col transition-transform duration-300 md:relative md:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 bg-background-paper w-64 border-r border-border transform transition-transform z-50 flex flex-col
+        ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
-        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-white">
-          <div className="font-bold text-lg flex items-center gap-2 text-slate-800">
-            <Code className="text-blue-600" /> {APP_TITLE}
+        <div className="h-16 flex items-center px-6 border-b border-border">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-2 shadow-lg shadow-blue-500/30">
+            <Code className="text-white" size={20} />
           </div>
+          <h1 className="text-xl font-black tracking-tight text-text-main">
+            {APP_TITLE}
+            <span className="text-blue-600 text-[10px] ml-1 align-top italic opacity-80">
+              {APP_VERSION}
+            </span>
+          </h1>
           <button
-            className="md:hidden text-slate-400"
             onClick={() => setIsMobileMenuOpen(false)}
+            className="md:hidden ml-auto text-text-subtle"
           >
             <X size={20} />
           </button>
@@ -2001,6 +2031,14 @@ ${formContent.substring(0, 2000)}`;
               <Upload size={16} className="text-blue-500" /> 외부 파일 가져오기
               (PDF, Word, HTML)
             </button>
+            <button
+              className="hidden"
+              ref={htmlInputRef}
+              onClick={() => htmlInputRef.current.click()}
+            >
+              <Upload size={16} className="text-blue-500" /> 외부 파일 가져오기
+              (PDF, Word, HTML)
+            </button>
             <input
               type="file"
               ref={htmlInputRef}
@@ -2012,25 +2050,25 @@ ${formContent.substring(0, 2000)}`;
 
           <div className="mt-auto pt-6 px-2">
             {user ? (
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col gap-3">
+              <div className="bg-background-subtle rounded-xl p-3 border border-border flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <img
                     src={user.photoURL}
                     alt="profile"
-                    className="w-8 h-8 rounded-full border border-slate-200"
+                    className="w-8 h-8 rounded-full border border-border"
                   />
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-slate-800 truncate">
+                    <span className="text-xs font-bold text-text-main truncate">
                       {user.displayName}
                     </span>
-                    <span className="text-[10px] text-slate-400 truncate">
+                    <span className="text-[10px] text-text-subtle truncate">
                       {user.email}
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="w-full py-2 text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                  className="w-full py-2 text-xs font-bold text-text-muted hover:text-red-500 hover:bg-red-50/10 rounded-lg transition-colors border border-transparent hover:border-red-100"
                 >
                   로그아웃
                 </button>
@@ -2039,14 +2077,14 @@ ${formContent.substring(0, 2000)}`;
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => handleLogin(false)}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-all active:scale-[0.98] dark:bg-slate-700 dark:hover:bg-slate-600"
                 >
                   <Globe size={18} />
                   로그인 (구글 클라우드 백업)
                 </button>
                 <button
                   onClick={() => handleLogin(true)}
-                  className="text-[11px] text-slate-400 hover:text-slate-600 underline underline-offset-2"
+                  className="text-[11px] text-text-subtle hover:text-text-muted underline underline-offset-2"
                 >
                   팝업이 안 뜨나요? 화면 전환으로 로그인
                 </button>
@@ -2055,7 +2093,7 @@ ${formContent.substring(0, 2000)}`;
           </div>
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-border">
           <button
             onClick={() => openWriteModal()}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-bold flex justify-center items-center gap-2 shadow-sm transition-colors"
@@ -2065,27 +2103,27 @@ ${formContent.substring(0, 2000)}`;
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center px-4 justify-between flex-shrink-0">
+      <main className="flex-1 flex flex-col h-full overflow-hidden bg-background">
+        <header className="h-16 bg-background-paper border-b border-border flex items-center px-4 justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <button
-              className="md:hidden text-slate-500"
+              className="md:hidden text-text-muted"
               onClick={() => setIsMobileMenuOpen(true)}
             >
               <Menu size={24} />
             </button>
-            <h2 className="font-bold text-lg text-slate-800 hidden sm:block">
+            <h2 className="font-bold text-lg text-text-main hidden sm:block">
               {categories.find((c) => c.id === selectedCategoryId)?.name ||
                 "전체 보기"}
             </h2>
           </div>
           <div className="relative w-full max-w-md ml-4">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-subtle pointer-events-none"
               size={18}
             />
             <input
-              className="w-full bg-slate-100 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full bg-background-subtle text-text-main border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-text-subtle"
               placeholder="제목, 내용, 태그 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -2093,7 +2131,7 @@ ${formContent.substring(0, 2000)}`;
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-subtle hover:text-text-muted"
               >
                 <X size={14} />
               </button>
@@ -2101,8 +2139,15 @@ ${formContent.substring(0, 2000)}`;
           </div>
           <div className="flex items-center gap-2 ml-4 shrink-0">
             <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="p-2 rounded-lg border border-border bg-background hover:bg-background-subtle text-text-muted transition-colors"
+              title={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
+            >
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+            <button
               onClick={() => setIsRotated(!isRotated)}
-              className={`p-2 rounded-lg border transition-colors ${isRotated ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              className={`p-2 rounded-lg border transition-colors ${isRotated ? "bg-blue-50/50 border-blue-200 text-blue-700 dark:text-blue-400" : "bg-background-paper border-border text-text-muted hover:bg-background-subtle"}`}
               title="화면 회전 (잠금 모드 대응)"
             >
               <Smartphone size={16} className={isRotated ? "rotate-90" : ""} />
@@ -2114,8 +2159,8 @@ ${formContent.substring(0, 2000)}`;
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors
                 ${
                   viewMode === "detailed"
-                    ? "bg-blue-50 border-blue-200 text-blue-700"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "bg-blue-50/50 border-blue-200 text-blue-700 dark:text-blue-400"
+                    : "bg-background-paper border-border text-text-muted hover:bg-background-subtle"
                 }
               `}
               title={
@@ -2144,7 +2189,7 @@ ${formContent.substring(0, 2000)}`;
                 return (
                   <div
                     key={snippet.id}
-                    className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
+                    className="bg-background-paper rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
                   >
                     <div
                       className="p-5 cursor-pointer flex justify-between items-start"
@@ -2152,7 +2197,7 @@ ${formContent.substring(0, 2000)}`;
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-background-subtle text-text-muted">
                             <Folder size={10} /> {snippet.category}
                           </span>
                           {viewMode === "compact" && (
@@ -2161,12 +2206,12 @@ ${formContent.substring(0, 2000)}`;
                             >
                               <ChevronDown
                                 size={14}
-                                className="text-slate-400"
+                                className="text-text-subtle"
                               />
                             </div>
                           )}
                         </div>
-                        <h3 className="text-lg font-bold text-slate-800 truncate">
+                        <h3 className="text-lg font-bold text-text-main truncate">
                           {snippet.title}
                         </h3>
                         {snippet.tags && snippet.tags.length > 0 && (
@@ -2191,20 +2236,20 @@ ${formContent.substring(0, 2000)}`;
                       >
                         <button
                           onClick={() => openWriteModal(snippet)}
-                          className="text-slate-400 hover:text-blue-600 p-1"
+                          className="text-text-subtle hover:text-blue-600 p-1"
                         >
                           <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleDeleteSnippet(snippet.id)}
-                          className="text-slate-400 hover:text-red-500 p-1"
+                          className="text-text-subtle hover:text-red-500 p-1"
                         >
                           <Trash2 size={18} />
                         </button>
                       </div>
                     </div>
                     {isExpanded && (
-                      <div className="px-5 pb-5 border-t border-slate-100 pt-4">
+                      <div className="px-5 pb-5 border-t border-border-subtle pt-4">
                         <MarkdownView
                           content={snippet.content}
                           code={snippet.code}
@@ -2215,7 +2260,7 @@ ${formContent.substring(0, 2000)}`;
                 );
               })
             ) : (
-              <div className="text-center py-20 text-slate-400 flex flex-col items-center">
+              <div className="text-center py-20 text-text-subtle flex flex-col items-center">
                 <Search size={48} className="mb-4 opacity-20" />
                 <p>표시할 내용이 없습니다.</p>
               </div>
@@ -2227,14 +2272,14 @@ ${formContent.substring(0, 2000)}`;
       {/* Write Modal */}
       {isWriteModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-3xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-lg text-slate-800">
+          <div className="bg-background-paper w-full max-w-3xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-background-subtle">
+              <h3 className="font-bold text-lg text-text-main">
                 {editingId ? "노트 수정" : "새 노트 작성"}
               </h3>
               <button
                 onClick={() => setIsWriteModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-text-subtle hover:text-text-muted"
               >
                 <X size={20} />
               </button>
@@ -2242,7 +2287,7 @@ ${formContent.substring(0, 2000)}`;
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
               <div className="relative">
                 <input
-                  className="w-full p-3 pr-10 border border-slate-300 rounded-lg outline-none focus:border-blue-500 text-lg font-bold"
+                  className="w-full p-3 pr-10 border border-border rounded-lg outline-none focus:border-blue-500 text-lg font-bold bg-background-paper text-text-main"
                   placeholder="제목"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
@@ -2252,8 +2297,8 @@ ${formContent.substring(0, 2000)}`;
                   disabled={isGeneratingTitle || !formContent.trim()}
                   className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all
                     ${isGeneratingTitle 
-                      ? 'bg-slate-100 text-slate-400' 
-                      : (formContent.trim() ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'text-slate-300')}
+                      ? 'bg-background-subtle text-text-subtle' 
+                      : (formContent.trim() ? 'bg-blue-50/50 text-blue-600 hover:bg-blue-100/50' : 'text-text-subtle')}
                   `}
                   title="AI 제목 자동 생성"
                 >
@@ -2265,11 +2310,11 @@ ${formContent.substring(0, 2000)}`;
                 </button>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">
+                <label className="block text-xs font-bold text-text-muted mb-1">
                   카테고리
                 </label>
                 <select
-                  className="w-full p-2.5 border border-slate-300 rounded-lg bg-white outline-none focus:border-blue-500"
+                  className="w-full p-2.5 border border-border rounded-lg bg-background-paper text-text-main outline-none focus:border-blue-500"
                   value={formCategoryId}
                   onChange={(e) => setFormCategoryId(e.target.value)}
                 >
@@ -2278,7 +2323,7 @@ ${formContent.substring(0, 2000)}`;
                     .map((c) => {
                       const depth = c.parentId ? 1 : 0;
                       return (
-                        <option key={c.id} value={c.id}>
+                        <option key={c.id} value={c.id} className="bg-background-paper text-text-main">
                           {"\u00A0".repeat(depth * 4)}
                           {c.name}
                         </option>
@@ -2289,13 +2334,13 @@ ${formContent.substring(0, 2000)}`;
               <div className="flex flex-col h-64">
                 <div className="flex justify-between items-center mb-1">
                   <div className="flex items-center gap-2">
-                    <label className="block text-xs font-bold text-slate-500">
+                    <label className="block text-xs font-bold text-text-muted">
                       내용 (Markdown & Code)
                     </label>
                     <div className="flex gap-1">
                       <button
                         onClick={() => cameraInputRef.current?.click()}
-                        className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-1 text-text-subtle hover:text-blue-600 hover:bg-blue-50/50 rounded transition-colors"
                         title="카메라로 텍스트 스캔"
                         disabled={isOcrLoading}
                       >
@@ -2303,7 +2348,7 @@ ${formContent.substring(0, 2000)}`;
                       </button>
                       <button
                         onClick={() => imageInputRef.current?.click()}
-                        className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-1 text-text-subtle hover:text-blue-600 hover:bg-blue-50/50 rounded transition-colors"
                         title="이미지에서 텍스트 추출"
                         disabled={isOcrLoading}
                       >
@@ -2311,7 +2356,7 @@ ${formContent.substring(0, 2000)}`;
                       </button>
                       <button
                         onClick={handleManualPaste}
-                        className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-1 text-text-subtle hover:text-blue-600 hover:bg-blue-50/50 rounded transition-colors"
                         title="클립보드 붙여넣기"
                       >
                         <ClipboardPaste size={14} />
@@ -2341,14 +2386,14 @@ ${formContent.substring(0, 2000)}`;
                       />
                     </div>
                   </div>
-                  <span className="text-[10px] text-blue-500 bg-blue-50 px-2 py-0.5 rounded">
+                  <span className="text-[10px] text-blue-500 bg-blue-50/50 px-2 py-0.5 rounded">
                     Tip: 코드 복붙 시 ``` 로 감싸세요
                   </span>
                 </div>
                 <div className="relative flex-1">
                   <textarea
                     ref={contentAreaRef}
-                    className={`w-full h-full p-3 border border-slate-300 rounded-lg outline-none focus:border-blue-500 resize-none font-sans leading-relaxed ${isOcrLoading ? 'opacity-50 pointer-events-none' : ''}`}
+                    className={`w-full h-full p-3 border border-border rounded-lg outline-none focus:border-blue-500 resize-none font-sans leading-relaxed bg-background-paper text-text-main placeholder:text-text-subtle ${isOcrLoading ? 'opacity-50 pointer-events-none' : ''}`}
                     placeholder={`내용 입력...\n\n\`\`\`javascript\nconsole.log("Hello");\n\`\`\``}
                     value={formContent}
                     onChange={(e) => setFormContent(e.target.value)}
@@ -2358,7 +2403,7 @@ ${formContent.substring(0, 2000)}`;
                     }
                   />
                   {isOcrLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[1px]">
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/30 backdrop-blur-[1px]">
                       <div className="flex flex-col items-center gap-2">
                         <Loader2 size={24} className="animate-spin text-blue-600" />
                         <span className="text-xs font-bold text-blue-600">추출 중...</span>
@@ -2368,32 +2413,32 @@ ${formContent.substring(0, 2000)}`;
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">
+                <label className="block text-xs font-bold text-text-muted mb-1">
                   태그 (쉼표로 구분)
                 </label>
                 <input
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500"
+                  className="w-full p-2.5 bg-background-subtle border border-border rounded-lg text-sm outline-none focus:border-blue-500 text-text-main"
                   placeholder="예: react, frontend, 중요"
                   value={formTags}
                   onChange={(e) => setFormTags(e.target.value)}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">
+                <label className="block text-xs font-bold text-text-muted mb-1">
                   추가 코드 스니펫 (선택 사항)
                 </label>
                 <textarea
-                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg h-24 font-mono text-sm outline-none focus:border-blue-500"
+                  className="w-full p-3 bg-background-subtle border border-border rounded-lg h-24 font-mono text-sm outline-none focus:border-blue-500 text-text-main"
                   placeholder="// 별도로 저장하고 싶은 코드"
                   value={formCode}
                   onChange={(e) => setFormCode(e.target.value)}
                 />
               </div>
             </div>
-            <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50">
+            <div className="p-4 border-t border-border flex justify-end gap-2 bg-background-subtle">
               <button
                 onClick={() => setIsWriteModalOpen(false)}
-                className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 font-medium"
+                className="px-4 py-2 bg-background-paper border border-border rounded-lg text-text-muted hover:bg-background-subtle font-medium"
               >
                 취소
               </button>
@@ -2411,10 +2456,10 @@ ${formContent.substring(0, 2000)}`;
       {/* Category Modal */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-lg text-slate-800">폴더 관리</h3>
-              <button onClick={() => setIsCategoryModalOpen(false)}>
+          <div className="bg-background-paper w-full max-w-sm rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-background-subtle">
+              <h3 className="font-bold text-lg text-text-main">폴더 관리</h3>
+              <button onClick={() => setIsCategoryModalOpen(false)} className="text-text-subtle hover:text-text-muted">
                 <X size={20} />
               </button>
             </div>
@@ -2422,7 +2467,7 @@ ${formContent.substring(0, 2000)}`;
               <div className="mb-6">
                 <div className="flex gap-2 mb-2">
                   <input
-                    className="flex-1 border p-2 rounded text-sm"
+                    className="flex-1 border border-border p-2 rounded text-sm bg-background-paper text-text-main"
                     placeholder="새 폴더 이름"
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
@@ -2435,15 +2480,15 @@ ${formContent.substring(0, 2000)}`;
                   </button>
                 </div>
                 <select
-                  className="w-full border p-2 rounded text-sm bg-slate-50"
+                  className="w-full border border-border p-2 rounded text-sm bg-background-subtle text-text-main"
                   value={newCatParentId}
                   onChange={(e) => setNewCatParentId(e.target.value)}
                 >
-                  <option value="">(최상위 폴더)</option>
+                  <option value="" className="bg-background-paper text-text-main">(최상위 폴더)</option>
                   {categories
                     .filter((c) => c.id !== "all")
                     .map((c) => (
-                      <option key={c.id} value={c.id}>
+                      <option key={c.id} value={c.id} className="bg-background-paper text-text-main">
                         {c.name}
                       </option>
                     ))}
@@ -2455,13 +2500,13 @@ ${formContent.substring(0, 2000)}`;
                   .map((c) => (
                     <div
                       key={c.id}
-                      className="flex justify-between items-center p-2 border rounded bg-slate-50 text-sm group"
+                      className="flex justify-between items-center p-2 border border-border rounded bg-background-subtle text-sm group"
                     >
                       <div className="flex-1 flex flex-col min-w-0">
                         {editingCategoryId === c.id ? (
                           <div className="flex gap-1 pr-2">
                             <input
-                              className="flex-1 border border-blue-400 p-1 rounded text-xs outline-none"
+                              className="flex-1 border border-blue-400 p-1 rounded text-xs outline-none bg-background-paper text-text-main"
                               value={renameValue}
                               onChange={(e) => setRenameValue(e.target.value)}
                               autoFocus
@@ -2481,7 +2526,7 @@ ${formContent.substring(0, 2000)}`;
                               </button>
                               <button
                                 onClick={() => setEditingCategoryId(null)}
-                                className="p-1 bg-slate-200 text-slate-600 rounded hover:bg-slate-300"
+                                className="p-1 bg-background-subtle text-text-subtle rounded hover:bg-slate-300"
                               >
                                 <X size={12} />
                               </button>
@@ -2489,11 +2534,11 @@ ${formContent.substring(0, 2000)}`;
                           </div>
                         ) : (
                           <>
-                            <span className="font-medium truncate">
+                            <span className="font-medium truncate text-text-main">
                               {c.name}
                             </span>
                             {c.parentId && (
-                              <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                              <span className="text-[10px] text-text-subtle flex items-center gap-1">
                                 <CornerDownRight size={10} />{" "}
                                 {
                                   categories.find((p) => p.id === c.parentId)
@@ -2511,14 +2556,14 @@ ${formContent.substring(0, 2000)}`;
                               setEditingCategoryId(c.id);
                               setRenameValue(c.name);
                             }}
-                            className="text-slate-400 hover:text-blue-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="text-text-subtle hover:text-blue-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <Edit2 size={14} />
                           </button>
                         )}
                         <button
                           onClick={() => handleDeleteCategory(c.id)}
-                          className="text-slate-400 hover:text-red-500 p-1"
+                          className="text-text-subtle hover:text-red-500 p-1"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -2527,8 +2572,8 @@ ${formContent.substring(0, 2000)}`;
                   ))}
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-100 text-center">
-                <div className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full text-xs text-slate-500">
+              <div className="mt-6 pt-4 border-t border-border text-center">
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-background-subtle rounded-full text-xs text-text-subtle">
                   <Info size={12} /> App Version: {APP_VERSION}
                 </div>
               </div>
@@ -2540,21 +2585,21 @@ ${formContent.substring(0, 2000)}`;
       {/* Install Modal */}
       {isInstallModalOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center">
+          <div className="bg-background-paper rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center">
             <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <Smartphone size={24} />
             </div>
-            <h3 className="font-bold text-lg text-slate-800 mb-2">
+            <h3 className="font-bold text-lg text-text-main mb-2">
               홈 화면에 추가하기
             </h3>
-            <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+            <p className="text-text-muted text-sm mb-6 leading-relaxed">
               브라우저 메뉴에서 <strong>'홈 화면에 추가'</strong>를 선택하면
               <br />
               앱처럼 <strong>전체 화면</strong>으로 실행됩니다.
             </p>
-            <div className="space-y-3 text-left bg-slate-50 p-4 rounded-lg text-sm text-slate-700 mb-6">
+            <div className="space-y-3 text-left bg-background-subtle p-4 rounded-lg text-sm text-text-main mb-6">
               <div className="flex items-start gap-2">
-                <span className="bg-slate-200 text-slate-700 w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold flex-shrink-0 mt-0.5">
+                <span className="bg-background-paper text-text-main w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold flex-shrink-0 mt-0.5 shadow-sm border border-border">
                   1
                 </span>
                 <span>
@@ -2564,7 +2609,7 @@ ${formContent.substring(0, 2000)}`;
                 </span>
               </div>
               <div className="flex items-start gap-2">
-                <span className="bg-slate-200 text-slate-700 w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold flex-shrink-0 mt-0.5">
+                <span className="bg-background-paper text-text-main w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold flex-shrink-0 mt-0.5 shadow-sm border border-border">
                   2
                 </span>
                 <span>
