@@ -406,7 +406,7 @@ const CategoryNode = ({
             if (hasChildren) onToggle(category.id);
           }
         }}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors mb-0.5 group/cat
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors mb-0.5 group/cat relative
           ${isSelected ? "bg-blue-100/50 text-blue-600 font-bold" : "text-text-muted hover:bg-background-subtle"}
         `}
         style={{ paddingLeft: `${depth * 16 + 12}px` }}
@@ -450,13 +450,13 @@ const CategoryNode = ({
           </div>
         ) : (
           <>
-            <span className="truncate flex-1" title={category.name}>{category.name}</span>
+            <span className="truncate flex-1 min-w-0" title={category.name}>{category.name}</span>
             {noteCount !== undefined && (
               <span className="text-[10px] font-medium px-1.5 py-0.5 bg-background-subtle text-text-muted rounded-full shrink-0 group-hover/cat:bg-background-paper transition-colors">
                 {noteCount}
               </span>
             )}
-            <div className="flex gap-1 opacity-0 group-hover/cat:opacity-100 transition-opacity translate-x-1">
+            <div className="absolute right-2 flex gap-1 opacity-0 group-hover/cat:opacity-100 transition-opacity bg-background-paper p-1 rounded-md shadow-sm border border-border z-10">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
